@@ -1,0 +1,96 @@
+<div class="extension-manager">
+    <header class="extension-manager-header">
+        <h2 id="extension_manager_title" data-i18n="Manage extensions">Manage extensions</h2>
+        <button id="extension_manager_install" type="button" class="menu_button extension-manager-primary">
+            <i class="fa-solid fa-plus" aria-hidden="true"></i>
+            <span data-i18n="Install extension">Install extension</span>
+        </button>
+    </header>
+    <div class="extension-manager-panes" data-view="list">
+        <section class="extension-manager-list" id="extension_manager_list" aria-label="Extensions" data-i18n="[aria-label]Extensions">
+            <div class="extension-manager-filters">
+                <label class="sr-only" for="extension_manager_search" data-i18n="Search extensions">Search extensions</label>
+                <input type="search" class="text_pole" id="extension_manager_search" placeholder="Search extensions" data-i18n="[placeholder]Search extensions" autocomplete="off">
+                <div class="extension-manager-options">
+                    <label class="sr-only" for="extension_manager_filter" data-i18n="Filter extensions">Filter extensions</label>
+                    <select class="text_pole" id="extension_manager_filter">
+                        <option value="all" data-i18n="All">All</option>
+                        <option value="third-party" data-i18n="Third-party extensions">Third-party extensions</option>
+                        <option value="built-in" data-i18n="Built-in extensions">Built-in extensions</option>
+                        <option value="updates" data-i18n="Updates available">Updates available</option>
+                    </select>
+                    <label class="sr-only" for="extension_manager_sort" data-i18n="Sort extensions">Sort extensions</label>
+                    <select class="text_pole" id="extension_manager_sort">
+                        <option value="order" data-i18n="Sort: Loading Order">Sort: Loading Order</option>
+                        <option value="name" data-i18n="Sort: Display Name">Sort: Display Name</option>
+                    </select>
+                </div>
+                <details class="extension-manager-disclosure" id="extension_manager_bulk">
+                    <summary data-i18n="Bulk actions">Bulk actions</summary>
+                    <p data-i18n="Bulk actions apply to all third-party extensions.">Bulk actions apply to all third-party extensions.</p>
+                    <div class="extension-manager-actions">
+                        <button type="button" class="menu_button" id="extension_manager_update_all" data-i18n="Update all">Update all</button>
+                        <button type="button" class="menu_button" id="extension_manager_update_enabled" data-i18n="Update enabled">Update enabled</button>
+                        <button type="button" class="menu_button" id="extension_manager_toggle_all" data-i18n="Toggle extensions">Toggle extensions</button>
+                        <button type="button" class="menu_button" id="extension_manager_restore_toggles" data-i18n="Undo bulk toggle" hidden>Undo bulk toggle</button>
+                    </div>
+                </details>
+            </div>
+            <div class="extension-manager-results">
+                <p class="extension-manager-message" id="extension_manager_list_message" role="status" hidden></p>
+                <section class="extension-manager-group" aria-labelledby="extension_manager_third_party_label" hidden>
+                    <h3 id="extension_manager_third_party_label" data-i18n="Third-party extensions">Third-party extensions</h3>
+                    <ul id="extension_manager_third_party"></ul>
+                </section>
+                <section class="extension-manager-group" aria-labelledby="extension_manager_built_in_label" hidden>
+                    <h3 id="extension_manager_built_in_label" data-i18n="Built-in extensions">Built-in extensions</h3>
+                    <ul id="extension_manager_built_in"></ul>
+                </section>
+                <details class="extension-manager-disclosure" id="extension_manager_diagnostics">
+                    <summary data-i18n="Extension diagnostics">Extension diagnostics</summary>
+                    <div id="extension_manager_diagnostics_content"></div>
+                </details>
+            </div>
+        </section>
+        <section class="extension-manager-detail" id="extension_manager_detail" aria-label="Extension details" data-i18n="[aria-label]Extension details">
+            <button id="extension_manager_back" type="button" class="menu_button extension-manager-back">
+                <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
+                <span data-i18n="Back to extensions">Back to extensions</span>
+            </button>
+            <div class="extension-manager-selection" id="extension_manager_selection" hidden>
+                <div class="extension-manager-selection-heading">
+                    <h3 id="extension_manager_name" tabindex="-1"></h3>
+                    <p id="extension_manager_status"></p>
+                </div>
+                <div class="extension-manager-actions">
+                    <label class="extension-manager-switch">
+                        <input type="checkbox" id="extension_manager_toggle">
+                        <span data-i18n="Enable extension">Enable extension</span>
+                    </label>
+                    <button type="button" class="menu_button extension-manager-primary" id="extension_manager_update" data-i18n="Update" hidden>Update</button>
+                </div>
+                <p class="extension-manager-message" id="extension_manager_pending" role="status" data-i18n="Takes effect after reload" hidden>Takes effect after reload</p>
+                <p class="info-block error" id="extension_manager_load_error" hidden></p>
+                <dl class="extension-manager-metadata">
+                    <div data-extension-field="source"><dt data-i18n="Source">Source</dt><dd></dd></div>
+                    <div data-extension-field="author"><dt data-i18n="Author">Author</dt><dd></dd></div>
+                    <div data-extension-field="version"><dt data-i18n="Version">Version</dt><dd></dd></div>
+                    <div data-extension-field="branch"><dt data-i18n="Branch">Branch</dt><dd></dd></div>
+                    <div data-extension-field="commit"><dt data-i18n="Commit">Commit</dt><dd></dd></div>
+                    <div data-extension-field="repository"><dt data-i18n="Repository">Repository</dt><dd><a target="_blank" rel="noopener noreferrer"></a></dd></div>
+                </dl>
+                <p class="extension-manager-message" id="extension_manager_version_status" role="status" hidden></p>
+                <p class="extension-manager-message" id="extension_manager_modules" hidden></p>
+                <details class="extension-manager-disclosure" id="extension_manager_more" hidden>
+                    <summary data-i18n="More actions">More actions</summary>
+                    <div class="extension-manager-actions">
+                        <button type="button" class="menu_button" id="extension_manager_branch" data-i18n="Switch branch">Switch branch</button>
+                        <button type="button" class="menu_button" id="extension_manager_move" data-i18n="Move">Move</button>
+                        <button type="button" class="menu_button" id="extension_manager_clean" data-i18n="Clean extension data">Clean extension data</button>
+                        <button type="button" class="menu_button extension-manager-delete" id="extension_manager_delete" data-i18n="Delete">Delete</button>
+                    </div>
+                </details>
+            </div>
+        </section>
+    </div>
+</div>

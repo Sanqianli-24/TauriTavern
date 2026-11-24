@@ -580,7 +580,7 @@ function updateInputDataLists() {
  * Opens the key manager dialog for a specific key.
  * @param {string} key Key for which to open the key manager dialog.
  */
-async function openKeyManagerDialog(key) {
+export async function openKeyManagerDialog(key) {
     const name = FRIENDLY_NAMES[key] || key;
     const template = $(await renderTemplateAsync('secretKeyManager', { name, key }));
     template.find('button[data-action="add-secret"]').on('click', async function () {

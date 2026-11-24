@@ -6,6 +6,7 @@ pub use tt_contracts::character::{
 };
 use tt_domain::errors::DomainError;
 use tt_domain::models::character::Character;
+use tt_domain::models::character_relationships::CharacterRelationshipResult;
 
 /// Repository interface for character management
 #[async_trait]
@@ -54,6 +55,19 @@ pub trait CharacterRepository: Send + Sync {
 
     /// Read the raw character card JSON payload as stored (PNG metadata, preferring V3 when available).
     async fn read_character_card_json(&self, name: &str) -> Result<String, DomainError>;
+
+    async fn load_relationships(
+        &self,
+        name: &str,
+    ) -> Result<Option<CharacterRelationshipResult>, DomainError>;
+
+    /// Publish the latest result only while the expected card revision is still stored.
+    async fn save_relationships(
+        &self,
+        name: &str,
+        expected_card_json: &str,
+        result: &CharacterRelationshipResult,
+    ) -> Result<(), DomainError>;
 
     /// Export a character card as PNG bytes by writing supplied card JSON metadata.
     async fn export_character_png_bytes(

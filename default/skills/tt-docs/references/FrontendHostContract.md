@@ -121,13 +121,15 @@ ESM `/scripts/secrets.js` 的 `writeSecret`、`deleteSecret`、`readSecretState`
   - `api.layout`：读取与订阅已排除原生遮挡的内容视口；`capture()` 属于第一方使用的 Project Contract，见 [API/Layout.md](API/Layout.md)。
   - `api.chat`：TauriTavern 独有的聊天/记忆类扩展 API（聊天摘要、元数据、历史分页、稳定存储、后端定位、纯文本检索）。
     - 详细签名与示例见：`docs/API/Chat.md`。
-  - `api.characterCards`：选择角色卡文件，以及接管卡内的世界书。
+  - `api.characterCards`：选择角色卡文件、接管卡内世界书和分析人物关系。
     - `isNativePickerAvailable()`：所有宿主都为 `true`。
     - `pickFiles(options?: { multiple?: boolean }) -> Promise<File[] | null>`：选择 `json/png` 角色卡，返回标准 `File[]`；支持多选；取消返回 `null`，失败抛错。
     - Project，第一方使用，参数为头像文件名：
       - `adoptLorebook(avatar)`：按角色当前的绑定，接管卡内世界书。
       - `resolveLorebookAdoption(avatar, choice, token)`：提交 `adopt` 或 `update`。决定已过期时，以 `LorebookAdoptionConflictError` 拒绝。
       - 两个方法都返回 `TauriTavernCharacterLorebookAdoption`（`src/types.d.ts`），失败时拒绝。规则见[角色世界书](CurrentState/CharacterIdentityContract.md#10-角色世界书)。
+      - `relationships.load(avatar)` 读取已保存的关系图、主世界书名和资料是否过期。
+      - `relationships.generate(avatar, { model, locale, includeLorebook? })` 用 DeepSeek 分析已保存的角色卡文本。`includeLorebook` 默认关闭，开启时加入绑定的主世界书中启用的条目。成功后在当前用户数据目录保存结果。
   - `api.extension.store`：扩展级**全局持久化**（不绑定 chat），提供 KV JSON + Blob，支持多 table 与 Blob 流式读取。
     - 签名、读写边界与示例见 [Extension Store API](API/Extension.md)。
   - `api.db`：本地向量、JSON、文本索引、图和 TQL 数据库。`open` 异步等待可用；NodeId 为整数；签名、索引恢复边界与共享关闭语义见 [Database API](API/Database.md)。

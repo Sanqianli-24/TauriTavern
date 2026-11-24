@@ -12,6 +12,7 @@ use tt_application::services::agent_runtime_service::AgentRuntimeService;
 use tt_application::services::asset_service::AssetService;
 use tt_application::services::avatar_service::AvatarService;
 use tt_application::services::background_service::BackgroundService;
+use tt_application::services::character_relationship_service::CharacterRelationshipService;
 use tt_application::services::character_service::CharacterService;
 use tt_application::services::chat_commit_service::ChatCommitService;
 use tt_application::services::chat_completion_service::ChatCompletionService;
@@ -79,6 +80,7 @@ impl AppLifecycle {
 
 pub(crate) struct AppServices {
     pub(crate) character_service: Arc<CharacterService>,
+    pub(crate) character_relationship_service: CharacterRelationshipService,
     pub(crate) chat_service: Arc<ChatService>,
     pub(crate) group_chat_service: Arc<GroupChatService>,
     pub(crate) chat_history_coordinator: Arc<ChatHistoryCoordinator>,

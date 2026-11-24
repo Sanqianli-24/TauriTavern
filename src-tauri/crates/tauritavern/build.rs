@@ -30,6 +30,7 @@ fn main() {
     println!("cargo:rerun-if-env-changed=TAURITAVERN_BUILD_REVISION");
 
     emit_git_build_metadata();
+    emit_update_repository();
 
     if let Err(error) = generate_resource_artifacts(needs_embedded_resources) {
         panic!("Failed to generate resource artifacts: {}", error);
@@ -67,6 +68,31 @@ fn emit_ios_factory_profile() {
         _ => panic!("Unsupported TAURITAVERN_IOS_POLICY_PROFILE: {profile:?}"),
     }
     println!("cargo:rustc-env=TAURITAVERN_IOS_POLICY_PROFILE={profile}");
+}
+
+fn emit_update_repository() {
+    const VARIABLE: &str = "TAURITAVERN_UPDATE_REPOSITORY";
+    println!("cargo:rerun-if-env-changed={VARIABLE}");
+    let repository = match std::env::var(VARIABLE) {
+        Ok(repository) => repository,
+        Err(std::env::VarError::NotPresent) => "Darkatse/TauriTavern".to_owned(),
+        Err(error) => panic!("Failed to read {VARIABLE}: {error}"),
+    };
+    let valid = repository.split_once('/').is_some_and(|(owner, name)| {
+        !owner.is_empty()
+            && owner
+                .bytes()
+                .all(|byte| byte.is_ascii_alphanumeric() || byte == b'-')
+            && !matches!(name, "" | "." | "..")
+            && name
+                .bytes()
+                .all(|byte| byte.is_ascii_alphanumeric() || b"-_.".contains(&byte))
+    });
+    assert!(
+        valid,
+        "{VARIABLE} must be a GitHub repository in owner/name form"
+    );
+    println!("cargo:rustc-env={VARIABLE}={repository}");
 }
 
 fn emit_git_build_metadata() {

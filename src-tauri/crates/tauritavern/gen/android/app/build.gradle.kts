@@ -16,12 +16,23 @@ val tauriProperties = Properties().apply {
     }
 }
 
+val localAppName = if (providers.environmentVariable("TAURITAVERN_UPDATE_REPOSITORY").isPresent) {
+    "TauriTavern 本地版"
+} else {
+    null
+}
+
 android {
     compileSdk = 36
     namespace = "com.tauritavern.client"
     defaultConfig {
         manifestPlaceholders["usesCleartextTraffic"] = "false"
+        manifestPlaceholders["appLabel"] = localAppName ?: "@string/app_name"
+        manifestPlaceholders["activityLabel"] = localAppName ?: "@string/main_activity_title"
         applicationId = "com.tauritavern.client"
+        if (localAppName != null) {
+            applicationIdSuffix = ".local"
+        }
         minSdk = 26
         targetSdk = 36
         versionCode = tauriProperties.getProperty("tauri.android.versionCode", "1").toInt()

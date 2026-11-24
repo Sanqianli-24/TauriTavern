@@ -9,12 +9,10 @@ use tt_domain::errors::DomainError;
 use tt_domain::models::update::{ReleaseInfo, UpdateChannel};
 use tt_ports::repositories::update_repository::UpdateRepository;
 
-const GITHUB_API_LATEST_RELEASE: &str =
-    "https://api.github.com/repos/Darkatse/TauriTavern/releases/latest";
-const GITHUB_API_CANARY_RELEASE: &str =
-    "https://api.github.com/repos/Darkatse/TauriTavern/releases/tags/Canary";
-const GITHUB_API_CANARY_COMMIT: &str =
-    "https://api.github.com/repos/Darkatse/TauriTavern/commits/Canary";
+const GITHUB_REPOSITORY_API: &str = concat!(
+    "https://api.github.com/repos/",
+    env!("TAURITAVERN_UPDATE_REPOSITORY"),
+);
 
 #[derive(Debug, Deserialize)]
 struct GitHubRelease {
@@ -40,10 +38,10 @@ impl GitHubUpdateRepository {
         Self { http_clients }
     }
 
-    async fn get_json<T: DeserializeOwned>(&self, url: &str) -> Result<T, DomainError> {
+    async fn get_json<T: DeserializeOwned>(&self, path: &str) -> Result<T, DomainError> {
         let client = self.http_clients.client(HttpClientProfile::Default)?;
         let response = client
-            .get(url)
+            .get(format!("{GITHUB_REPOSITORY_API}/{path}"))
             .header("Accept", "application/vnd.github+json")
             .header("X-GitHub-Api-Version", "2022-11-28")
             .send()
@@ -83,8 +81,8 @@ impl UpdateRepository for GitHubUpdateRepository {
     async fn get_release(&self, channel: UpdateChannel) -> Result<ReleaseInfo, DomainError> {
         let response: GitHubRelease = self
             .get_json(match channel {
-                UpdateChannel::Stable => GITHUB_API_LATEST_RELEASE,
-                UpdateChannel::Canary => GITHUB_API_CANARY_RELEASE,
+                UpdateChannel::Stable => "releases/latest",
+                UpdateChannel::Canary => "releases/tags/Canary",
             })
             .await?;
 
@@ -105,11 +103,7 @@ impl UpdateRepository for GitHubUpdateRepository {
         let version =
             (channel == UpdateChannel::Stable).then(|| parse_version_from_tag(&response.tag_name));
         let source_revision = if channel == UpdateChannel::Canary {
-            Some(
-                self.get_json::<GitHubCommit>(GITHUB_API_CANARY_COMMIT)
-                    .await?
-                    .sha,
-            )
+            Some(self.get_json::<GitHubCommit>("commits/Canary").await?.sha)
         } else {
             None
         };

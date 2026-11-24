@@ -3,6 +3,7 @@ pub mod agent_dto;
 pub mod background_dto;
 pub mod bootstrap_dto;
 pub mod character_dto;
+pub mod character_relationships_dto;
 pub mod chat_completion_dto;
 pub mod chat_dto;
 pub mod chat_history_dto;

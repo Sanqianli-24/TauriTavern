@@ -1,6 +1,7 @@
 mod cache;
 mod helpers;
 mod importer;
+mod relationships;
 mod repository;
 mod shallow_index;
 
@@ -29,6 +30,7 @@ pub struct FileCharacterRepository {
     shallow_index_path: PathBuf,
     memory_cache: Arc<Mutex<MemoryCache>>,
     shallow_index_cache: Arc<Mutex<Option<CharacterShallowIndexCache>>>,
+    card_writes: Mutex<()>,
     chat_aliases: SharedChatAliasStore,
     chat_repository: Arc<FileChatRepository>,
 }
@@ -102,6 +104,7 @@ impl FileCharacterRepository {
             shallow_index_path,
             memory_cache,
             shallow_index_cache,
+            card_writes: Mutex::new(()),
             chat_aliases,
             chat_repository,
         }

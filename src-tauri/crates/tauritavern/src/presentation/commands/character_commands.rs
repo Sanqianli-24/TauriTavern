@@ -16,6 +16,9 @@ use tt_application::dto::character_dto::{
     ResolveCharacterLorebookAdoptionDto, UpdateAvatarDto, UpdateCharacterCardDataDto,
     UpdateCharacterDto,
 };
+use tt_application::dto::character_relationships_dto::{
+    CharacterRelationshipsDto, GenerateCharacterRelationshipsDto,
+};
 use tt_domain::models::skill::{SkillScope, SkillScopeRetargetRequest};
 
 const SKILL_SOURCE_KIND_CHARACTER: &str = "character";
@@ -51,6 +54,36 @@ pub async fn get_character(
             "Failed to get character {}",
             name
         )))
+}
+
+#[tauri::command]
+pub async fn load_character_relationships(
+    name: String,
+    app_state: State<'_, Arc<AppState>>,
+) -> Result<CharacterRelationshipsDto, CommandError> {
+    app_state
+        .services
+        .character_relationship_service
+        .load(&name)
+        .await
+        .map_err(map_command_error(
+            "Failed to load the character relationship graph",
+        ))
+}
+
+#[tauri::command]
+pub async fn generate_character_relationships(
+    dto: GenerateCharacterRelationshipsDto,
+    app_state: State<'_, Arc<AppState>>,
+) -> Result<CharacterRelationshipsDto, CommandError> {
+    app_state
+        .services
+        .character_relationship_service
+        .generate(dto)
+        .await
+        .map_err(map_command_error(
+            "Failed to generate the character relationship graph",
+        ))
 }
 
 #[tauri::command]

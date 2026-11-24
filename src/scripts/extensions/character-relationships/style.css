@@ -1,0 +1,272 @@
+#form_create:not([actiontype="editcharacter"]) #tt_character_relationships {
+    display: none;
+}
+
+.tt-relationships {
+    --tt-relationship-accent: var(--SmartThemeQuoteColor);
+    display: grid;
+    gap: 0.85rem;
+    min-inline-size: 0;
+    text-align: start;
+}
+
+.tt-relationships h2,
+.tt-relationships h3,
+.tt-relationships p {
+    margin: 0;
+}
+
+.tt-relationships-card-name {
+    overflow-wrap: anywhere;
+    opacity: 0.8;
+}
+
+.tt-relationships-controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem 1rem;
+    padding: 0.75rem;
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: 0.6rem;
+}
+
+.tt-relationships-model {
+    font-weight: 600;
+    overflow-wrap: anywhere;
+}
+
+.tt-relationships .tt-relationships-meta {
+    margin-block: 0.25rem;
+    opacity: 0.8;
+    font-size: 0.9em;
+    overflow-wrap: anywhere;
+}
+
+.tt-relationships-lorebook {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    margin-block-start: 0.5rem;
+    overflow-wrap: anywhere;
+}
+
+.tt-relationships-actions,
+.tt-relationships-zoom,
+.tt-relationships-evidence-heading {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+}
+
+.tt-relationships-actions .menu_button,
+.tt-relationships-evidence-heading .menu_button {
+    max-inline-size: 100%;
+    white-space: normal;
+}
+
+.tt-relationships .tt-relationships-generate {
+    border-color: var(--tt-relationship-accent);
+}
+
+.tt-relationships-status {
+    padding: 0.55rem 0.7rem;
+    border-inline-start: 3px solid var(--tt-relationship-accent);
+    overflow-wrap: anywhere;
+}
+
+.tt-relationships-results {
+    display: grid;
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+    gap: 0.75rem;
+}
+
+.tt-relationships-map,
+.tt-relationships-evidence {
+    min-inline-size: 0;
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: 0.6rem;
+}
+
+.tt-relationships-zoom {
+    justify-content: end;
+    padding: 0.3rem;
+    border-block-end: 1px solid var(--SmartThemeBorderColor);
+}
+
+.tt-relationships-viewport {
+    block-size: clamp(15rem, 46vh, 28rem);
+    overflow: auto;
+    direction: ltr;
+    overscroll-behavior: contain;
+}
+
+.tt-relationships-stage {
+    display: grid;
+    min-inline-size: 100%;
+    min-block-size: 100%;
+    inline-size: max-content;
+    place-items: center;
+}
+
+.tt-relationships-frame,
+.tt-relationships-diagram {
+    position: relative;
+}
+
+.tt-relationships-frame {
+    overflow: hidden;
+}
+
+.tt-relationships-diagram {
+    transform-origin: top left;
+}
+
+.tt-relationships-edge {
+    position: absolute;
+    height: 1.5px;
+    background: currentColor;
+    transform-origin: center left;
+    color: var(--SmartThemeBodyColor);
+    opacity: 0.52;
+}
+
+.tt-relationships-edge::after {
+    position: absolute;
+    content: '';
+    inset-inline-end: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    border-block: 4px solid transparent;
+    border-inline-start: 7px solid currentColor;
+}
+
+.tt-relationships-edge[data-muted="true"] {
+    opacity: 0.16;
+}
+
+.tt-relationships-edge[data-active="true"] {
+    color: var(--tt-relationship-accent);
+    opacity: 1;
+    height: 2px;
+}
+
+.tt-relationships-person,
+.tt-relationships-edge-label,
+.tt-relationships-list-item {
+    color: inherit;
+    font: inherit;
+    border: 1px solid var(--SmartThemeBorderColor);
+    cursor: pointer;
+}
+
+.tt-relationships-person,
+.tt-relationships-edge-label {
+    position: absolute;
+    box-sizing: border-box;
+    transform: translate(-50%, -50%);
+    background: var(--SmartThemeBlurTintColor);
+    overflow: hidden;
+}
+
+.tt-relationships-person {
+    display: grid;
+    place-items: center;
+    inline-size: 128px;
+    block-size: 54px;
+    padding: 0.35rem;
+    border-radius: 0.6rem;
+    font-weight: 600;
+    overflow-wrap: anywhere;
+}
+
+.tt-relationships-person span {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+}
+
+.tt-relationships-person[data-card="true"] {
+    border-width: 2px;
+    border-color: var(--tt-relationship-accent);
+}
+
+.tt-relationships-person[aria-pressed="true"],
+.tt-relationships-edge-label[aria-pressed="true"],
+.tt-relationships-list-item[aria-expanded="true"] {
+    border-color: var(--tt-relationship-accent);
+    background: color-mix(in srgb, var(--SmartThemeBlurTintColor) 85%, var(--tt-relationship-accent));
+}
+
+.tt-relationships-edge-label {
+    max-inline-size: 120px;
+    padding: 0.18rem 0.4rem;
+    border-radius: 0.4rem;
+    font-size: 0.78em;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.tt-relationships-evidence {
+    padding: 0.7rem;
+    max-block-size: calc(clamp(15rem, 46vh, 28rem) + 3rem);
+    overflow: auto;
+    overflow-wrap: anywhere;
+}
+
+.tt-relationships-evidence-heading {
+    justify-content: space-between;
+}
+
+.tt-relationships-evidence ul {
+    display: grid;
+    gap: 0.4rem;
+    margin: 0.6rem 0 0;
+    padding: 0;
+    list-style: none;
+}
+
+.tt-relationships-list-item {
+    display: grid;
+    gap: 0.15rem;
+    inline-size: 100%;
+    padding: 0.4rem 0.55rem;
+    background: transparent;
+    border-radius: 0.35rem;
+    text-align: start;
+    overflow-wrap: anywhere;
+}
+
+.tt-relationships-evidence figure {
+    margin: 0.3rem 0;
+    padding-inline: 0.55rem;
+}
+
+.tt-relationships-evidence blockquote {
+    margin: 0.3rem 0;
+    white-space: pre-wrap;
+}
+
+.tt-relationships-evidence figcaption {
+    font-size: 0.85em;
+    opacity: 0.8;
+}
+
+.tt-relationships button:focus-visible {
+    outline: 2px solid var(--tt-relationship-accent);
+    outline-offset: 2px;
+    z-index: 1;
+}
+
+@media (max-width: 760px) {
+    .tt-relationships-results {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .tt-relationships-evidence {
+        max-block-size: none;
+    }
+}

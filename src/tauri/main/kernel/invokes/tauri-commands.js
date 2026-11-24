@@ -80,6 +80,8 @@ export {};
  *   | 'get_assets_library'
  *   | 'get_background_folders'
  *   | 'get_character'
+ *   | 'load_character_relationships'
+ *   | 'generate_character_relationships'
  *   | 'get_character_assets'
  *   | 'get_character_chats_by_id'
  *   | 'get_character_chat_summary'

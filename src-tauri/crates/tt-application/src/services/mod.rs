@@ -16,6 +16,7 @@ pub mod asset_service;
 pub mod avatar_service;
 pub mod background_service;
 pub mod bundled_template_service;
+pub mod character_relationship_service;
 pub mod character_service;
 pub mod chat_commit_service;
 pub mod chat_completion_service;

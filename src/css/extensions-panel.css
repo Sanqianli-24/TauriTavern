@@ -40,96 +40,6 @@ label[for="extensions_autoconnect"] {
     display: none;
 }
 
-.extensions_info {
-    text-align: left;
-}
-
-.extensions_info h3:not(.margin0) {
-    margin-bottom: 0.5em;
-}
-
-.extensions_info h4 {
-    margin-bottom: 0.5em;
-}
-
-.extensions_info p {
-    margin-bottom: 0.5em;
-    margin-left: 1em;
-}
-
-.extensions_info .disabled {
-    color: lightgray;
-}
-
-.extensions_info .toggle_enable {
-    color: lightgreen;
-}
-
-.extensions_info .toggle_disable {
-    color: rgb(238, 144, 144);
-}
-
-.extensions_info .extension_enabled {
-    font-weight: bold;
-}
-
-.extensions_info .extension_disabled {
-    color: lightgray;
-}
-
-.extensions_info .extension_missing {
-    color: gray;
-}
-
-.extensions_info .extension_modules {
-    font-size: 0.8em;
-    font-weight: normal;
-}
-
-.extensions_info .extension_block {
-    display: flex;
-    flex-wrap: nowrap;
-    padding: 5px;
-    margin-bottom: 5px;
-    border: 1px solid var(--SmartThemeBorderColor);
-    border-radius: 10px;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: 5px;
-}
-
-.extensions_info .extension_name {
-    font-size: 1.05em;
-}
-
-.extensions_info .extension_version {
-    opacity: 0.8;
-    font-size: 0.8em;
-    font-weight: normal;
-    margin-left: 2px;
-}
-
-.extensions_info .extension_block a {
-    color: var(--SmartThemeBodyColor);
-}
-
-.extensions_info .extension_name.update_available {
-    color: limegreen;
-}
-
-.extensions_info .third_party_toolbar {
-    user-select: none;
-}
-
-input.extension_missing[type="checkbox"] {
-    opacity: 0.5;
-}
-
-.update-button {
-    margin-right: 10px;
-    display: inline-flex;
-}
-
 /* Fixes order of settings for extensions */
 #extensions_settings,
 #extensions_settings2 {
@@ -146,24 +56,365 @@ input.extension_missing[type="checkbox"] {
     display: none;
 }
 
-.extensions_info .extension_text_block {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.extensions_info .extension_actions {
-    flex-wrap: nowrap;
-}
-
-.extensions_toolbar {
-    top: 0;
-    position: sticky;
+.extensions-drawer-header {
     display: flex;
-    flex-direction: row;
-    background-color: var(--SmartThemeBlurTintColor);
-    gap: 5px;
-    z-index: 1;
-    margin-bottom: 10px;
-    padding: 5px;
+    align-items: center;
+    flex-wrap: wrap;
+    width: 100%;
+    gap: 8px 16px;
+    padding-block: 6px 12px;
+    border-block-end: 1px solid var(--SmartThemeBorderColor);
+}
+
+.extensions-drawer-header h3 {
+    margin-inline-end: auto;
+}
+
+.extensions-drawer-actions,
+.extension-manager-actions {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.extensions-drawer-actions .menu_button {
+    margin: 0;
+    padding: 6px 12px;
+}
+
+.popup.extension-manager-popup {
+    --extension-manager-accent: var(--SmartThemeQuoteColor);
+    --extension-manager-surface: color-mix(in srgb, var(--SmartThemeBodyColor) 5%, transparent);
+    --extension-manager-selection: color-mix(in srgb, var(--extension-manager-accent) 14%, transparent);
+    --extension-manager-control-height: 40px;
+    box-sizing: border-box;
+    width: 100%;
+    max-width: none;
+    height: var(--doc-height);
+    min-height: 0;
+    max-height: none;
+    padding: 0;
+    border-radius: 0;
+}
+
+.popup.extension-manager-popup .popup-body {
+    min-height: 0;
+    max-height: none;
+    padding: 0;
+}
+
+.popup.extension-manager-popup .popup-content {
+    display: flex;
+    min-height: 0;
+    margin: 0;
+    padding: 0;
+}
+
+.popup.extension-manager-popup .popup-controls {
+    flex: none;
+    align-self: stretch;
+    justify-content: flex-end;
+    margin: 0;
+    padding: 6px 16px;
+    border-block-start: 1px solid var(--SmartThemeBorderColor);
+}
+
+.extension-manager-popup .popup-controls .popup-button-ok {
+    background: var(--extension-manager-surface);
+}
+
+.popup.extension-manager-popup .popup-button-close {
+    inset-inline-end: 10px;
+    inset-block-start: 8px;
+}
+
+.extension-manager {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+    text-align: start;
+}
+
+.extension-manager [hidden] {
+    display: none !important;
+}
+
+.extension-manager-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px 16px;
+    padding: 12px 52px 12px 20px;
+    border-block-end: 1px solid var(--SmartThemeBorderColor);
+}
+
+.extension-manager :is(h2, h3, p, dl, dd) {
+    margin: 0;
+}
+
+.extension-manager-header h2 {
+    font-size: 1.22em;
+}
+
+.extension-manager .menu_button,
+.extension-manager-popup .popup-controls .menu_button {
+    min-height: var(--extension-manager-control-height);
+    margin: 0;
+    padding: 6px 12px;
+    gap: 8px;
+    white-space: normal;
+}
+
+.extension-manager .extension-manager-primary {
+    border-color: var(--extension-manager-accent);
+    background: var(--extension-manager-selection);
+}
+
+.extension-manager .menu_button[aria-disabled="true"] {
+    opacity: 0.6;
+    cursor: wait;
+}
+
+.extension-manager-panes {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr);
+    flex: 1;
+    min-height: 0;
+}
+
+.extension-manager-list,
+.extension-manager-detail {
+    min-width: 0;
+    min-height: 0;
+    overflow: auto;
+    overscroll-behavior: contain;
+    overflow-wrap: anywhere;
+}
+
+.extension-manager-list {
+    background: var(--extension-manager-surface);
+}
+
+.extension-manager-panes[data-view="list"] .extension-manager-detail,
+.extension-manager-panes[data-view="detail"] .extension-manager-list {
+    display: none;
+}
+
+.extension-manager-filters,
+.extension-manager-results {
+    display: grid;
+    gap: 12px;
+    padding: 14px 16px;
+}
+
+.extension-manager-filters {
+    border-block-end: 1px solid var(--SmartThemeBorderColor);
+}
+
+.extension-manager-options {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+}
+
+.extension-manager-filters :is(input, select) {
+    width: 100%;
+    min-width: 0;
+    min-height: var(--extension-manager-control-height);
+    margin: 0;
+}
+
+.extension-manager-group h3 {
+    padding: 0 9px 5px;
+    font-size: 0.88em;
+}
+
+.extension-manager-group ul {
+    display: grid;
+    gap: 3px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.extension-manager-row {
+    display: grid;
+    gap: 3px;
+    width: 100%;
+    min-height: var(--extension-manager-control-height);
+    padding: 9px 11px;
+    border: 1px solid transparent;
+    border-inline-start-width: 3px;
+    border-radius: 7px;
+    color: inherit;
+    font: inherit;
+    text-align: start;
+    background: transparent;
+    cursor: pointer;
+}
+
+.extension-manager-row:hover {
+    background: var(--extension-manager-surface);
+}
+
+.extension-manager-row[aria-current="true"] {
+    border-inline-start-color: var(--extension-manager-accent);
+    background: var(--extension-manager-selection);
+}
+
+.extension-manager :is(button, input, select, summary, a):focus-visible {
+    outline: 2px solid var(--extension-manager-accent);
+    outline-offset: 2px;
+}
+
+.extension-manager-row strong {
+    font-weight: 600;
+}
+
+.extension-manager-row-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 3px 10px;
+    font-size: 0.84em;
+}
+
+.extension-manager-row-meta span:first-child,
+.extension-manager-selection-heading p,
+.extension-manager-metadata dt,
+.extension-manager-message {
+    opacity: 0.85;
+}
+
+.extension-manager-update-available {
+    color: var(--extension-manager-accent);
+}
+
+.extension-manager-detail {
+    padding: clamp(16px, 2.5vw, 32px);
+}
+
+.extension-manager-detail .extension-manager-back {
+    margin-block-end: 14px;
+}
+
+.extension-manager-selection {
+    display: grid;
+    gap: 16px;
+}
+
+.extension-manager-selection-heading h3 {
+    font-size: clamp(1.2em, 2.4vw, 1.7em);
+}
+
+.extension-manager-switch {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--extension-manager-control-height);
+    gap: 8px;
+    padding-inline: 10px;
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: 7px;
+    background: var(--extension-manager-surface);
+    cursor: pointer;
+}
+
+.extension-manager-switch:has(input:disabled) {
+    cursor: default;
+}
+
+.extension-manager-metadata {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 11rem), 1fr));
+    gap: 1px;
+    overflow: hidden;
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: 8px;
+}
+
+.extension-manager-metadata > div {
+    min-width: 0;
+    padding: 10px 12px;
+    background: var(--extension-manager-surface);
+}
+
+.extension-manager-metadata dt {
+    margin-block-end: 4px;
+    font-size: 0.86em;
+}
+
+.extension-manager-metadata [data-extension-field="repository"] {
+    grid-column: 1 / -1;
+}
+
+.extension-manager-metadata a {
+    color: var(--SmartThemeBodyColor);
+    text-decoration: underline;
+}
+
+.extension-manager-disclosure {
+    border-block-start: 1px solid var(--SmartThemeBorderColor);
+}
+
+.extension-manager-disclosure summary {
+    align-content: center;
+    min-height: var(--extension-manager-control-height);
+    padding-inline: 8px;
+    cursor: pointer;
+}
+
+.extension-manager-disclosure > p,
+.extension-manager-disclosure > div {
+    margin-block: 4px 9px;
+}
+
+.extension-manager-delete {
+    border-color: var(--warning);
+}
+
+@media (min-width: 840px) {
+    .popup.extension-manager-popup {
+        width: calc(100% - 28px);
+        max-width: 1440px;
+        height: calc(var(--doc-height) - 28px);
+        border-radius: 10px;
+    }
+
+    .extension-manager-panes {
+        grid-template-columns: clamp(285px, 32%, 440px) minmax(0, 1fr);
+    }
+
+    .extension-manager-panes[data-view] > :is(.extension-manager-list, .extension-manager-detail) {
+        display: block;
+    }
+
+    .extension-manager-list {
+        border-inline-end: 1px solid var(--SmartThemeBorderColor);
+    }
+
+    .extension-manager .extension-manager-back {
+        display: none;
+    }
+}
+
+@media (pointer: coarse) {
+    .popup.extension-manager-popup {
+        --extension-manager-control-height: 48px;
+    }
+
+    .popup.extension-manager-popup .popup-button-close {
+        width: 48px;
+        height: 48px;
+        inset-inline-end: 2px;
+        inset-block-start: 4px;
+    }
+
+    .extensions-drawer-actions .menu_button,
+    .extensions-drawer-header label {
+        min-height: 48px;
+    }
 }

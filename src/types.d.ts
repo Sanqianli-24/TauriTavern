@@ -1318,6 +1318,28 @@ type TauriTavernCharacterImportResult = {
     lorebook: TauriTavernCharacterLorebookAdoption | { status: 'failed' };
 };
 
+type TauriTavernCharacterRelationship = {
+    from: string;
+    to: string;
+    label: string;
+    evidence: { source: string; entry: string | null; quote: string };
+};
+
+type TauriTavernCharacterRelationshipGraph = {
+    generatedAt: string;
+    model: string;
+    lorebookName: string | null;
+    people: { id: string; name: string }[];
+    relationships: TauriTavernCharacterRelationship[];
+};
+
+type TauriTavernCharacterRelationships = {
+    characterName: string;
+    lorebookName: string | null;
+    result: TauriTavernCharacterRelationshipGraph | null;
+    stale: boolean;
+};
+
 type TauriTavernCharacterCardsApi = {
     isNativePickerAvailable: () => boolean;
     pickFiles: (options?: TauriTavernCharacterCardsPickOptions) => Promise<File[] | null>;
@@ -1325,6 +1347,10 @@ type TauriTavernCharacterCardsApi = {
     adoptLorebook: (avatar: string) => Promise<TauriTavernCharacterLorebookAdoption>;
     /** Project: apply a decision returned by import or adoptLorebook. */
     resolveLorebookAdoption: (avatar: string, choice: 'adopt' | 'update', token: string) => Promise<TauriTavernCharacterLorebookAdoption>;
+    relationships: {
+        load: (avatar: string) => Promise<TauriTavernCharacterRelationships>;
+        generate: (avatar: string, options: { model: string; locale: string; includeLorebook?: boolean }) => Promise<TauriTavernCharacterRelationships>;
+    };
 };
 
 type TauriTavernChatSurfaceDisposable = (() => void) | { dispose: () => void };

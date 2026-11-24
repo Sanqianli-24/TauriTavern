@@ -15,12 +15,22 @@ Linux 系统软件源默认使用 `stable`，并提供独立的 `canary` 套件�
 
 ## 检测链路
 
-前端把有效渠道传给 `check_for_update` command，application service 决定比较语义，GitHub adapter 只负责读取渠道对应的数据：
+前端把有效渠道传给 `check_for_update` command，application service 决定比较语义，GitHub adapter 只负责读取渠道对应的数据。构建时可以通过 `TAURITAVERN_UPDATE_REPOSITORY` 指定 `owner/repo`，默认使用 `Darkatse/TauriTavern`。
 
-- Stable：`GET /repos/Darkatse/TauriTavern/releases/latest`
-- Canary：`GET /repos/Darkatse/TauriTavern/releases/tags/Canary` 与 `GET /repos/Darkatse/TauriTavern/commits/Canary`
+- Stable：`GET /repos/{owner}/{repo}/releases/latest`
+- Canary：`GET /repos/{owner}/{repo}/releases/tags/Canary` 与 `GET /repos/{owner}/{repo}/commits/Canary`
 
 Canary Release 必须是 prerelease；Stable latest 不能是 prerelease。返回给前端的 `release_token` 是机器去重键：Stable 使用 tag，Canary 使用 `sha12`。弹窗主要展示 Release name，因此 Canary 的时间格式由发布流水线统一产生。
+
+## 安卓本地版发布
+
+安卓构建指定个人发布仓库时，启动器显示「TauriTavern 本地版」，Android application ID 为 `com.tauritavern.client.local`。在平板上覆盖安装一次使用同一签名的新版，之后可使用版本面板的 Stable 渠道接收新发布提示。
+
+个人公开仓库中的 [Android Local Release](../../.github/workflows/android-local-release.yml) 在推送 `vMAJOR.MINOR.PATCH` 标签时执行。工作流将当前仓库配置为 APK 的更新源，核对源码版本、ARM64 APK 和签名证书后，把 APK 发布为正式 Release 附件。
+
+- 在仓库的 Actions secrets 配置 `ANDROID_KEY_BASE64`、`ANDROID_KEY_ALIAS`、`ANDROID_KEY_PASSWORD`。使用设备上已安装本地版对应的签名密钥。
+- 在仓库的 Actions variables 配置 `ANDROID_SIGNER_SHA256`，值为现有 APK 签名证书的 SHA-256 摘要。
+- 常规发版同步 `package.json`、Tauri 配置、`tauritavern` crate、Cargo.lock 和 Nix 的版本。用 `node scripts/ci/verify-release-version.mjs vMAJOR.MINOR.PATCH` 核对后，提交并推送对应的版本标签。
 
 ## Canary 发布链路
 

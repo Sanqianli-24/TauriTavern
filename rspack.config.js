@@ -178,6 +178,21 @@ export function createRspackConfigs(mode = 'production') {
     module: createReactModule(development),
   };
 
+  const characterRelationshipsConfig = {
+    ...createSharedConfig(mode, 'character-relationships'),
+    entry: {
+      index: './src/scripts/extensions/character-relationships/src/index.tsx',
+    },
+    output: {
+      filename: '[name].bundle.js',
+      path: path.resolve(__dirname, 'src/scripts/extensions/character-relationships/dist'),
+      module: true,
+      library: { type: 'module' },
+      clean: true,
+    },
+    module: createReactModule(development),
+  };
+
   const inAppAgentConfig = {
     ...createSharedConfig(mode, 'in-app-agent'),
     entry: {
@@ -221,7 +236,7 @@ export function createRspackConfigs(mode = 'production') {
     module: createReactModule(development),
   };
 
-  return [coreConfig, agentSystemConfig, mcpManagerConfig, inAppAgentConfig, tauriTavernSettingsConfig];
+  return [coreConfig, agentSystemConfig, mcpManagerConfig, inAppAgentConfig, characterRelationshipsConfig, tauriTavernSettingsConfig];
 }
 
 export default (_env, argv = {}) => createRspackConfigs(argv.mode ?? 'production');

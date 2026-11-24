@@ -109,11 +109,28 @@ function createCharacterCardsApi({
         }
     }
 
+    const relationships = {
+        /** @param {string} avatar */
+        async load(avatar) {
+            const name = characterStemFromAvatarFileName(avatar, 'avatar', { required: true });
+            return safeInvoke('load_character_relationships', { name });
+        },
+
+        /** @param {string} avatar @param {{ model: string; locale: string; includeLorebook?: boolean }} options */
+        async generate(avatar, { model, locale, includeLorebook = false }) {
+            const name = characterStemFromAvatarFileName(avatar, 'avatar', { required: true });
+            return safeInvoke('generate_character_relationships', {
+                dto: { name, model, locale, includeLorebook },
+            });
+        },
+    };
+
     return {
         isNativePickerAvailable: () => true,
         pickFiles,
         adoptLorebook,
         resolveLorebookAdoption,
+        relationships,
     };
 }
 

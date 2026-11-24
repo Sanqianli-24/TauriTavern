@@ -9,6 +9,7 @@ First-party UI 包含：
 - Agent System；
 - In-App Assistant；
 - MCP Manager；
+- 角色卡人物关系图；
 - Tauri Settings、Dev Logs 与 Sync。
 
 这些界面统一使用 React、React DOM 与 strict TypeScript/TSX。上游 SillyTavern 前端、第三方扩展和由 WebView 直接加载的宿主脚本不属于 React 组件源码。
@@ -38,6 +39,7 @@ Rspack 直接拥有以下 TypeScript/TSX 源码：
 src/scripts/extensions/agent-system/src
 src/scripts/extensions/in-app-agent/src
 src/scripts/extensions/mcp-manager/src
+src/scripts/extensions/character-relationships/src
 src/scripts/tauri/setting/settings-app
 src/scripts/tauri/setting/dev-logs-app
 src/scripts/tauri/setting/sync-app
@@ -50,6 +52,7 @@ src/scripts/tauri/setting/sync-app
 | Agent System | `agent-system/src/index.tsx` | `agent-system/dist/index.bundle.js` | Agent manifest |
 | In-App Assistant | `in-app-agent/src/index.ts` | `in-app-agent/dist/index.bundle.js`、`index.bundle.css` | Assistant manifest |
 | MCP Manager | `mcp-manager/src/index.tsx` | `mcp-manager/dist/index.bundle.js` | MCP manifest |
+| 人物关系图 | `character-relationships/src/index.tsx` | `character-relationships/dist/index.bundle.js` | 角色卡编辑区按钮按需加载 |
 | Settings | `settings-app/SettingsApp.tsx` | `setting/dist/settings.bundle.js` | `setting-panel/settings-popup.js` |
 | Dev Logs | `dev-logs-app/DevLogsApp.tsx` | `setting/dist/dev-logs.bundle.js` | `setting/dev-logs.js` |
 | Sync | `sync-app/index.ts` | `setting/dist/sync.bundle.js` | Sync popup 与 listener 外壳 |

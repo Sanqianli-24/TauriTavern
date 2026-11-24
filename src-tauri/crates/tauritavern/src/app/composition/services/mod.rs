@@ -18,6 +18,7 @@ use tt_adapter_workspace_shell::WorkspaceShellEngine;
 use tt_application::services::asset_service::AssetService;
 use tt_application::services::avatar_service::AvatarService;
 use tt_application::services::background_service::BackgroundService;
+use tt_application::services::character_relationship_service::CharacterRelationshipService;
 use tt_application::services::character_service::CharacterService;
 use tt_application::services::chat_commit_service::ChatCommitService;
 use tt_application::services::chat_completion_service::ChatCompletionService;
@@ -212,6 +213,11 @@ pub(super) async fn build(
         agent_services.agent_workspace_lifecycle_service.clone(),
         chat_history_coordinator.clone(),
     ));
+    let character_relationship_service = CharacterRelationshipService::new(
+        repositories.character_repository.clone(),
+        repositories.world_info_repository.clone(),
+        chat_completion_service.clone(),
+    );
     let chat_service = Arc::new(ChatService::new(
         repositories.chat_repository.clone(),
         repositories.character_repository.clone(),
@@ -266,6 +272,7 @@ pub(super) async fn build(
 
     Ok(AppServices {
         character_service,
+        character_relationship_service,
         chat_service,
         group_chat_service,
         chat_history_coordinator,

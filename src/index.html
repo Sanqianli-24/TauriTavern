@@ -6091,21 +6091,23 @@ Using a draft model is preferred. Speculative ngram is not as effective." id="sp
             </div>
             <div id="rm_extensions_block" class="drawer-content closedDrawer">
                 <div class="extensions_block flex-container">
-                    <div class="alignitemscenter flex-container wide100p">
-                        <h3 class="margin0 flex1" data-i18n="Extensions">
+                    <div class="extensions-drawer-header">
+                        <h3 class="margin0" data-i18n="Extensions">
                             Extensions
                         </h3>
                         <label for="extensions_notify_updates" class="checkbox_label flexNoGap">
                             <input id="extensions_notify_updates" type="checkbox">
                             <span data-i18n="Notify on extension updates">Notify on extension updates</span>
                         </label>
-                        <div id="extensions_details" class="menu_button_icon menu_button">
-                            <i class="fa-solid fa-cubes"></i>
-                            <span data-i18n="Manage extensions">Manage extensions</span>
-                        </div>
-                        <div id="third_party_extension_button" title="Import Extension From Git Repo" data-i18n="[title]Import Extension From Git Repo" class="menu_button menu_button_icon">
-                            <i class="fa-solid fa-cloud-arrow-down"></i>
-                            <span data-i18n="Install extension">Install extension</span>
+                        <div class="extensions-drawer-actions">
+                            <div id="extensions_details" class="menu_button_icon menu_button">
+                                <i class="fa-solid fa-cubes" aria-hidden="true"></i>
+                                <span data-i18n="Manage extensions">Manage extensions</span>
+                            </div>
+                            <div id="third_party_extension_button" title="Import Extension From Git Repo" data-i18n="[title]Import Extension From Git Repo" class="menu_button menu_button_icon">
+                                <i class="fa-solid fa-cloud-arrow-down" aria-hidden="true"></i>
+                                <span data-i18n="Install extension">Install extension</span>
+                            </div>
                         </div>
                     </div>
                     <div id="extensions_settings" class="flex1 wide50p">

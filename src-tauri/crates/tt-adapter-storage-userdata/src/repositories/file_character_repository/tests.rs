@@ -16,6 +16,9 @@ use tt_adapter_storage_core::{
     FileChatRepository, chat_directory_identity::new_shared_chat_alias_store_for_user_dir,
 };
 use tt_domain::models::character::Character;
+use tt_domain::models::character_relationships::{
+    CharacterRelationshipGraph, CharacterRelationshipPerson, CharacterRelationshipResult,
+};
 use tt_ports::repositories::character_repository::{
     CHARACTER_CREATE_WARNING_AVATAR_IMPORT_FAILED, CharacterRepository,
 };
@@ -125,6 +128,109 @@ async fn create_character(repository: &FileCharacterRepository, character: &Char
         .create_with_avatar(character, None, None)
         .await
         .expect("create character");
+}
+
+#[tokio::test]
+async fn relationships_follow_the_stored_card_without_accepting_a_stale_write() {
+    let (repository, root) = setup_repository().await;
+    let character = Character::new(
+        "Mira".to_string(),
+        "Kai protects Mira.".to_string(),
+        String::new(),
+        String::new(),
+    );
+    create_character(&repository, &character).await;
+    let original = repository.read_character_card_json("Mira").await.unwrap();
+    let mut saved = CharacterRelationshipResult {
+        card_created_at: character.create_date,
+        source_fingerprint: "first-source".to_string(),
+        graph: CharacterRelationshipGraph {
+            generated_at: "2026-01-01T00:00:00Z".to_string(),
+            model: "deepseek-flash".to_string(),
+            lorebook_name: None,
+            people: vec![CharacterRelationshipPerson {
+                id: "card".to_string(),
+                name: "Mira".to_string(),
+            }],
+            relationships: vec![],
+        },
+    };
+    repository
+        .save_relationships("Mira", &original, &saved)
+        .await
+        .unwrap();
+    let duplicate = repository.duplicate("Mira").await.unwrap();
+    assert_eq!(duplicate.name, "Mira");
+    let duplicate_stem = duplicate.get_file_name();
+    assert!(
+        repository
+            .load_relationships(&duplicate_stem)
+            .await
+            .unwrap()
+            .is_none()
+    );
+
+    let mut edited: Value = serde_json::from_str(&original).unwrap();
+    edited["description"] = json!("Mira now protects Kai.");
+    edited["data"]["description"] = edited["description"].clone();
+    repository
+        .write_character_card_json("Mira", &edited.to_string(), None, None)
+        .await
+        .unwrap();
+    saved.source_fingerprint = "stale-attempt".to_string();
+    let error = repository
+        .save_relationships("Mira", &original, &saved)
+        .await
+        .unwrap_err();
+    assert!(matches!(error, tt_domain::errors::DomainError::Conflict(_)));
+
+    let renamed = repository
+        .rename("Mira", "Renamed")
+        .await
+        .unwrap()
+        .get_file_name();
+    assert!(
+        repository
+            .load_relationships("Mira")
+            .await
+            .unwrap()
+            .is_none()
+    );
+    let reopened = repository_for_root(&root).await;
+    let moved = reopened
+        .load_relationships(&renamed)
+        .await
+        .unwrap()
+        .unwrap();
+    assert_eq!(moved.source_fingerprint, "first-source");
+
+    let replacement = repository.get_character_path(&duplicate_stem);
+    repository
+        .replace_character(&replacement, &renamed, "")
+        .await
+        .unwrap();
+    assert!(
+        repository
+            .load_relationships(&renamed)
+            .await
+            .unwrap()
+            .is_none()
+    );
+    let replaced = repository.read_character_card_json(&renamed).await.unwrap();
+    repository
+        .save_relationships(&renamed, &replaced, &saved)
+        .await
+        .unwrap();
+    repository.delete(&renamed, false).await.unwrap();
+    assert!(
+        repository
+            .load_relationships(&renamed)
+            .await
+            .unwrap()
+            .is_none()
+    );
+
+    let _ = fs::remove_dir_all(&root).await;
 }
 
 fn shallow_index_path(root: &Path) -> PathBuf {

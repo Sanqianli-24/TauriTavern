@@ -1,0 +1,140 @@
+name: Android Local Release
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+
+concurrency:
+  group: android-local-release
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    if: github.repository != 'Darkatse/TauriTavern'
+    runs-on: ubuntu-latest
+    env:
+      TAURITAVERN_BUILD_BRANCH: main
+      TAURITAVERN_UPDATE_REPOSITORY: ${{ github.repository }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: pnpm/setup@v2
+        with:
+          runtime: node@22
+          cache: true
+          install: false
+
+      - name: Validate release version
+        run: node scripts/ci/verify-release-version.mjs "$GITHUB_REF_NAME"
+
+      - name: Install Android host dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libglib2.0-dev libgtk-3-dev libwebkit2gtk-4.1-dev
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android
+
+      - uses: actions/setup-java@v5
+        with:
+          java-version: "21"
+          distribution: temurin
+          cache: gradle
+          cache-dependency-path: |
+            src-tauri/crates/tauritavern/gen/android/**/*.gradle*
+            src-tauri/crates/tauritavern/gen/android/**/gradle-wrapper.properties
+
+      - uses: android-actions/setup-android@v4
+        with:
+          packages: platform-tools platforms;android-36 build-tools;36.0.0
+
+      - uses: nttld/setup-ndk@v1
+        id: ndk
+        with:
+          ndk-version: r29
+          link-to-sdk: true
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Configure the standard Android bundle
+        run: ./scripts/ci/configure-mobile-http.sh enable android
+
+      - name: Build and verify the APK
+        env:
+          NDK_HOME: ${{ steps.ndk.outputs.ndk-path }}
+          ANDROID_KEY_BASE64: ${{ secrets.ANDROID_KEY_BASE64 }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          ANDROID_SIGNER_SHA256: ${{ vars.ANDROID_SIGNER_SHA256 }}
+        run: |
+          set -euo pipefail
+          : "${ANDROID_KEY_BASE64:?Missing Android signing key}"
+          : "${ANDROID_KEY_ALIAS:?Missing Android signing key alias}"
+          : "${ANDROID_KEY_PASSWORD:?Missing Android signing key password}"
+          : "${ANDROID_SIGNER_SHA256:?Missing expected Android signing certificate digest}"
+
+          umask 077
+          android_project=src-tauri/crates/tauritavern/gen/android
+          keystore="$RUNNER_TEMP/tauritavern-local.jks"
+          printf '%s' "$ANDROID_KEY_BASE64" | base64 --decode > "$keystore"
+          printf 'keyAlias=%s\npassword=%s\nstoreFile=%s\n' \
+            "$ANDROID_KEY_ALIAS" "$ANDROID_KEY_PASSWORD" "$keystore" > "$android_project/keystore.properties"
+          unset ANDROID_KEY_BASE64 ANDROID_KEY_ALIAS ANDROID_KEY_PASSWORD
+
+          toolchain="$NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64"
+          export AR_aarch64_linux_android="$toolchain/bin/llvm-ar"
+          export CC_aarch64_linux_android="$toolchain/bin/aarch64-linux-android24-clang"
+          export BINDGEN_EXTRA_CLANG_ARGS_aarch64_linux_android="--sysroot=$toolchain/sysroot"
+          pnpm run android:build --apk --split-per-abi --target aarch64 --ci
+
+          apk="$android_project/app/build/outputs/apk/arm64/release/app-arm64-release.apk"
+          build_tools="$ANDROID_HOME/build-tools/36.0.0"
+          badging=$("$build_tools/aapt2" dump badging "$apk")
+          grep -F "package: name='com.tauritavern.client.local'" <<< "$badging"
+          grep -F "versionName='${GITHUB_REF_NAME#v}'" <<< "$badging"
+          grep -F "native-code: 'arm64-v8a'" <<< "$badging"
+          signing=$("$build_tools/apksigner" verify --print-certs "$apk")
+          actual=$(sed -n 's/^Signer #1 certificate SHA-256 digest: //p' <<< "$signing")
+          [[ "$actual" == "${ANDROID_SIGNER_SHA256,,}" ]] || {
+            echo 'APK signing certificate differs from the installed local edition' >&2
+            exit 1
+          }
+          cp "$apk" "$RUNNER_TEMP/TauriTavern-${GITHUB_REF_NAME#v}-local-arm64.apk"
+
+      - name: Publish the update
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          apk="$RUNNER_TEMP/TauriTavern-${GITHUB_REF_NAME#v}-local-arm64.apk"
+          releases=$(gh release list --limit 100 --json tagName,isLatest,isDraft)
+          latest=$(jq -r '.[] | select(.isLatest) | .tagName' <<< "$releases")
+          newest=$(printf '%s\n' "$latest" "$GITHUB_REF_NAME" | sort -V | tail -n 1)
+          [[ "$newest" == "$GITHUB_REF_NAME" ]] || {
+            echo "Latest published version $latest is newer than $GITHUB_REF_NAME" >&2
+            exit 1
+          }
+          state=$(jq -r --arg tag "$GITHUB_REF_NAME" \
+            '.[] | select(.tagName == $tag) | if .isDraft then "draft" else "published" end' <<< "$releases")
+          case "$state" in
+            draft)
+              gh release upload "$GITHUB_REF_NAME" "$apk" --clobber
+              gh release edit "$GITHUB_REF_NAME" --draft=false --latest
+              ;;
+            published)
+              [[ "$latest" == "$GITHUB_REF_NAME" ]]
+              gh release view "$GITHUB_REF_NAME" --json assets |
+                jq -e --arg apk "$(basename "$apk")" 'any(.assets[]; .name == $apk)' > /dev/null
+              ;;
+            "")
+              gh release create "$GITHUB_REF_NAME" "$apk" --verify-tag --generate-notes --latest
+              ;;
+          esac

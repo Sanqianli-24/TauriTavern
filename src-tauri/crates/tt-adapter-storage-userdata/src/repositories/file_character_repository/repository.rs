@@ -8,11 +8,14 @@ use crate::png_card_metadata::{
     process_avatar_image, read_character_data_from_png, read_character_data_from_png_file,
     write_character_data_to_png,
 };
-use tt_adapter_storage_core::file_system::{replace_file, unique_temp_path};
+use tt_adapter_storage_core::file_system::{
+    read_json_file, replace_file, unique_temp_path, write_json_file,
+};
 use tt_contracts::client_asset_paths::validate_path_segment;
 use tt_domain::errors::DomainError;
 use tt_domain::json_merge::merge_json_value;
 use tt_domain::models::character::Character;
+use tt_domain::models::character_relationships::CharacterRelationshipResult;
 use tt_ports::repositories::character_repository::{
     CHARACTER_CREATE_WARNING_AVATAR_IMPORT_FAILED, CharacterChat, CharacterCreateResult,
     CharacterCreateWarning, CharacterRepository, ImageCrop,
@@ -346,6 +349,7 @@ impl CharacterRepository for FileCharacterRepository {
     }
 
     async fn delete(&self, name: &str, delete_chats: bool) -> Result<(), DomainError> {
+        let _write = self.card_writes.lock().await;
         let file_path = self.get_character_path(name);
         if !file_path.exists() {
             return Err(DomainError::NotFound(format!(
@@ -374,6 +378,7 @@ impl CharacterRepository for FileCharacterRepository {
             tracing::error!("Failed to delete character file: {}", e);
             DomainError::InternalError(format!("Failed to delete character file: {}", e))
         })?;
+        self.remove_relationships(name).await;
 
         if let Some(chat_dir) = chat_dir
             && chat_dir.exists()
@@ -409,6 +414,7 @@ impl CharacterRepository for FileCharacterRepository {
         avatar_path: Option<&Path>,
         crop: Option<ImageCrop>,
     ) -> Result<Character, DomainError> {
+        let _write = self.card_writes.lock().await;
         let file_path = self.get_character_path(name);
 
         if !file_path.exists() {
@@ -458,6 +464,7 @@ impl CharacterRepository for FileCharacterRepository {
     }
 
     async fn rename(&self, old_name: &str, new_name: &str) -> Result<Character, DomainError> {
+        let _write = self.card_writes.lock().await;
         self.ensure_directory_exists().await?;
 
         let old_path = self.get_character_path(old_name);
@@ -533,6 +540,9 @@ impl CharacterRepository for FileCharacterRepository {
         }
 
         let remove_old_cache_entry = old_name != target_file_stem;
+        if remove_old_cache_entry {
+            self.move_relationships(old_name, &target_file_stem).await;
+        }
         let character = self.read_character_from_file(&new_path).await?;
         {
             let mut cache = self.memory_cache.lock().await;
@@ -600,6 +610,7 @@ impl CharacterRepository for FileCharacterRepository {
         name: &str,
         primary_lorebook: &str,
     ) -> Result<Character, DomainError> {
+        let _write = self.card_writes.lock().await;
         self.ensure_directory_exists().await?;
         if !validate_path_segment(name) {
             return Err(DomainError::InvalidData(
@@ -622,6 +633,7 @@ impl CharacterRepository for FileCharacterRepository {
                 },
             )
             .await?;
+        self.remove_relationships(name).await;
         self.publish_character_write(name.to_string(), character.clone())
             .await;
         Ok(character)
@@ -637,6 +649,35 @@ impl CharacterRepository for FileCharacterRepository {
         }
 
         read_character_data_from_png_file(&file_path).await
+    }
+
+    async fn load_relationships(
+        &self,
+        name: &str,
+    ) -> Result<Option<CharacterRelationshipResult>, DomainError> {
+        let path = self.relationship_path(name)?;
+        match read_json_file(&path).await {
+            Ok(result) => Ok(Some(result)),
+            Err(DomainError::NotFound(_)) => Ok(None),
+            Err(error) => Err(error),
+        }
+    }
+
+    async fn save_relationships(
+        &self,
+        name: &str,
+        expected_card_json: &str,
+        result: &CharacterRelationshipResult,
+    ) -> Result<(), DomainError> {
+        let path = self.relationship_path(name)?;
+        let _write = self.card_writes.lock().await;
+        if self.read_character_card_json(name).await? != expected_card_json {
+            return Err(DomainError::Conflict(
+                "The character card changed during analysis. Generate the relationship graph again."
+                    .to_string(),
+            ));
+        }
+        write_json_file(&path, result).await
     }
 
     async fn export_character_png_bytes(
