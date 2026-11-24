@@ -30,3 +30,14 @@
 - **测试实践:** 优先复用最高层的现有行为覆盖，避免在各层重复同一断言；并发测试使用确定性协调，不依赖 sleep。删除功能或测试时同步删除失效的 fixture、fake、hook 与依赖。核心仓储迁移或格式语义变更保留最小可运行测试；先运行受影响 crate 的 focused tests 与 `scripts/check-rust-crate-boundaries.mjs`，每次实现完成后运行完整 harness：`pnpm run check`。
 - **前端交互:** 注意 `FrontendGuide.md` 中关于与前端交互的说明，特别是 DTO 和事件的约定。
 - **仓库级 Skill:** 日常开发 Skill 以 `.agents/skills/` 为唯一来源，`.claude/skills` 是指向它的软链接；`.github/codex/skills/` 只供 CI 受控使用。涉及架构规划、统一机制、上游同步或审阅时，使用 `maintain-conceptual-integrity`。
+
+## 个人安卓本地版发版
+
+本节适用于 TauriTavern Optimization 工作区的个人安卓本地版。用户已持续授权将完成的项目更新提交、推送到其公开 fork，并发布签名 APK。每个对话实际完成项目更新后，在同一个对话内走完以下流程。
+
+1. 核对发布分支 `android-local` 和远端 `personal`（`https://github.com/Sanqianli-24/TauriTavern.git`）。若在其他工作树或分支完成改动，先整合到个人发布分支。
+2. 结合仓库当前版本、个人 fork 最新正式 Release 和已有标签选取递增且未占用的版本号。用户指定版本时遵循其指示，日常更新默认递增补丁号。同步 `package.json`、Tauri 配置、`tauritavern` crate、Cargo.lock 和 Nix 的版本。运行 `node scripts/ci/verify-release-version.mjs vMAJOR.MINOR.PATCH`，并按项目规则验证本次改动。
+3. 暂存本次任务的改动和对应版本文件，提交并推送 `android-local`，再把同一提交的新版标签推送到 `personal`。标签触发 [Android Local Release](.github/workflows/android-local-release.yml)，该工作流沿用 `com.tauritavern.client.local` 和现有 Actions 签名配置，构建并发布平板所用的 ARM64 APK。
+4. 持续跟踪对应的 GitHub Actions 运行到完成。用公开的 `https://api.github.com/repos/Sanqianli-24/TauriTavern/releases/latest` 验证 Stable 渠道已指向新版，并核对 Release 附有可下载的 ARM64 APK。构建或发布失败时诊断并在授权范围内修复。交付时给出版本、APK 链接和核验结果。若遇到外部阻塞，说明当前状态和具体阻塞。
+
+签名和更新渠道的配置见 [更新渠道说明](docs/CurrentState/UpdateChannels.md#安卓本地版发布)。
