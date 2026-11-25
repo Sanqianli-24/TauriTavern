@@ -44,6 +44,39 @@ for (const identity of [HOSTS.windows, HOSTS.android]) {
     });
 }
 
+test('home resumes the newest chat while the sidebar keeps pinned sessions first', async () => {
+    const { window, fixture, load, startHost, getModule } = await createBrowserRuntime();
+    const request = (url, body = {}) => fixture.backend.handle({ method: 'POST', url, headers: {}, body: JSON.stringify(body) });
+    const settings = JSON.parse(JSON.parse(request('/api/settings/get').body).settings);
+    settings.active_character = null;
+    settings.power_user.auto_load_chat = false;
+    settings.accountStorage = { pinnedChats: JSON.stringify({
+        'char_Review.png_older.jsonl': { avatar: 'Review.png', group: '', file_name: 'older.jsonl' },
+    }) };
+    request('/api/settings/save', settings);
+    const [header, message] = fixture.chatFiles.get('review-chat').split('\n');
+    fixture.chatFiles.set('older', [header, JSON.stringify({ ...JSON.parse(message), send_date: '2025-12-01T12:00:00Z' })].join('\n'));
+
+    try {
+        await startHost();
+        await load('script.js');
+        const { eventSource, event_types } = getModule('scripts/events.js').namespace;
+        const ready = new Promise(resolve => eventSource.once(event_types.APP_READY, resolve));
+        window.jQuery.holdReady(false);
+        await ready;
+        const sidebar = window.document.querySelector('#tt-session-list');
+        const buttons = sidebar.querySelectorAll('.tt-session-button');
+        assert.deepEqual(Array.from(buttons, button => button.title), ['older', 'review-chat']);
+        assert.equal(window.document.querySelector('.tt-welcome-chat-name').textContent, 'review-chat');
+
+        const opened = new Promise(resolve => eventSource.once(event_types.CHAT_CHANGED, resolve));
+        window.document.querySelector('.tt-welcome-continue').click();
+        assert.equal(await opened, 'review-chat');
+    } finally {
+        await window.happyDOM.close();
+    }
+});
+
 test('Web Host distinguishes a missing chat from an empty chat file', async context => {
     const { window, fixture, load } = await createBrowserRuntime();
     context.after(() => window.happyDOM.close());

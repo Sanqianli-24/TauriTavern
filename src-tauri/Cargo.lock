@@ -8597,7 +8597,7 @@ dependencies = [
 
 [[package]]
 name = "tauritavern"
-version = "2.4.3"
+version = "2.4.4"
 dependencies = [
  "async-trait",
  "base64 0.23.1",

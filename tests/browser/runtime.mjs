@@ -8,7 +8,7 @@ import { createWebHostFixture } from './web-host-fixture.mjs';
 
 const root = fileURLToPath(new URL('../../src/', import.meta.url));
 const defaultSettings = JSON.parse(readFileSync(new URL('../../default/content/settings.json', import.meta.url), 'utf8'));
-const defaultTheme = JSON.parse(readFileSync(new URL('../../default/content/themes/Dark Lite.json', import.meta.url), 'utf8'));
+const defaultTheme = JSON.parse(readFileSync(new URL('../../default/content/themes/Night Study.json', import.meta.url), 'utf8'));
 const extensions = readdirSync(path.join(root, 'scripts/extensions'))
     .filter(name => existsSync(path.join(root, 'scripts/extensions', name, 'manifest.json')))
     .map(name => ({ name, type: 'system' }));

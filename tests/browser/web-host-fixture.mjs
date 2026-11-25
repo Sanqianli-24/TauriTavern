@@ -1,7 +1,7 @@
 export function createWebHostFixture(defaultSettings, theme, extensions) {
     const settings = structuredClone(defaultSettings);
     Object.assign(settings, { firstRun: false, currentVersion: '2.3.0', active_character: 'Review.png', active_group: null });
-    Object.assign(settings.power_user, { tokenizer: 0, auto_load_chat: true, theme_fallback: 'Dark Lite' });
+    Object.assign(settings.power_user, { tokenizer: 0, auto_load_chat: true, theme_fallback: theme.name });
     Object.assign(settings.oai_settings, { chat_completion_source: 'custom', custom_url: 'https://replay.invalid/v1', custom_model: 'replay' });
     settings.power_user.personas = { 'user-default.png': 'User' };
     settings.power_user.persona_descriptions = {
@@ -80,6 +80,11 @@ export function createWebHostFixture(defaultSettings, theme, extensions) {
                     payload.quickReplyPresets = [...payload.quickReplyPresets.filter(set => set.name !== body.name), body];
                     return { status: 200, headers: {}, body: '' };
                 case 'POST /api/chats/get': return respond(chatFiles.has(body.file_name) ? records(chatFiles.get(body.file_name)) : {});
+                case 'POST /api/chats/recent': return respond([...chatFiles].map(([file, text]) => {
+                    const messages = records(text);
+                    return { avatar: 'Review.png', file_name: `${file}.jsonl`, file_size: '200 B',
+                        chat_items: messages.length - 1, mes: messages.at(-1)?.mes, last_mes: messages.at(-1)?.send_date };
+                }));
                 case 'POST /api/chats/save': {
                     const current = chatFiles.get(body.file_name);
                     const incoming = body.chat[0]?.chat_metadata?.integrity;

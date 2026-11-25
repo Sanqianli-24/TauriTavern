@@ -16,6 +16,7 @@ import {
     getSystemMessageByType,
     getThumbnailUrl,
     is_send_press,
+    name2,
     neutralCharacterName,
     newAssistantChat,
     printCharactersDebounced,
@@ -34,18 +35,20 @@ import {
 } from '../script.js';
 import { getRegexedString, regex_placement } from './extensions/regex/engine.js';
 import { ChatInputFocusIntent, focusChatInput } from './chat-input-focus.js';
-import { deleteGroupChat, getGroupAvatar, groups, is_group_generating, openGroupById } from './group-chats.js';
+import { deleteGroupChat, getGroupAvatar, groups, is_group_generating, openGroupById, selected_group } from './group-chats.js';
 import { t } from './i18n.js';
-import { captureFocus, setAriaRelation } from './dom-handlers.js';
+import { captureFocus, keepFocus, setAriaRelation } from './dom-handlers.js';
 import { callGenericPopup, POPUP_TYPE } from './popup.js';
 import { getMessageTimeStamp } from './RossAscends-mods.js';
 import { renderTemplateAsync } from './templates.js';
+import { initTavernWorkspace } from './tavern-workspace.js';
 import { accountStorage } from './util/AccountStorage.js';
 import { clamp, flashHighlight, isElementInViewport, sortMoments, timestampToMoment } from './utils.js';
 
 const assistantAvatarKey = 'assistant';
 const pinnedChatsKey = 'pinnedChats';
 const recentChatsSettingsKey = 'recentChatsSettings';
+let recentChatsRequest;
 const defaultAssistantAvatar = 'default_Assistant.png';
 
 const DEFAULT_MAX_DISPLAYED = 15;
@@ -248,7 +251,7 @@ export async function openWelcomeScreen({ force = false, expand = false } = {}) 
     }
 
     const restoreHeader = captureFocus(
-        () => document.querySelectorAll('#chat .welcomeHeaderTitle, #chat .welcomeHeader'),
+        () => document.querySelectorAll('#chat .tt-welcome-feature, #chat .welcomeHeaderTitle, #chat .welcomeHeader'),
         item => item.className,
     );
     const restoreChats = captureFocus(
@@ -260,10 +263,12 @@ export async function openWelcomeScreen({ force = false, expand = false } = {}) 
         resetChatSurfaceView({ includeAuxiliary: true });
     }
     document.getElementById('chat').append(panel);
+    renderWorkspaceSessions(recentChats);
     sendAssistantMessage();
     sendWelcomePrompt();
+    if (!force) setChatScrollTop(0);
     restoreHeader();
-    if (!restoreChats()) panel.querySelector('button.openTemporaryChat').focus();
+    if (!restoreChats()) panel.querySelector('button.openTemporaryChat').focus({ preventScroll: true });
 }
 
 /**
@@ -331,14 +336,25 @@ function sendWelcomePrompt() {
  * @param {boolean} [expand=false] If true, expands the recent chats section
  */
 async function createWelcomePanel(chats, expand = false) {
+    const featured = chats.reduce((latest, entry) => !latest || compareRecency(entry, latest) < 0 ? entry : latest, null);
     const templateData = {
         chats,
+        featured,
         empty: !chats.length,
         version: displayVersion,
         more: chats.some(chat => chat.hidden),
     };
     const template = await renderTemplateAsync('welcomePanel', templateData);
     const fragment = document.createRange().createContextualFragment(template);
+    if (featured) {
+        fragment.querySelector('.tt-welcome-continue').addEventListener('click', () => void openRecentChat(featured));
+        const cover = fragment.querySelector('.tt-welcome-cover');
+        if (featured.is_group) {
+            cover.replaceChildren(getGroupAvatar(groups.find(group => group.id === featured.group))[0]);
+        } else {
+            cover.querySelector('img').src = featured.char_thumbnail;
+        }
+    }
     fragment.querySelectorAll('.welcomePanel').forEach((root) => {
         const recentHiddenClass = 'recentHidden';
         const recentHiddenKey = 'WelcomePage_RecentChatsHidden';
@@ -379,17 +395,7 @@ async function createWelcomePanel(chats, expand = false) {
             }
         }
 
-        item.addEventListener('click', () => {
-            const avatarId = item.getAttribute('data-avatar');
-            const groupId = item.getAttribute('data-group');
-            const fileName = item.getAttribute('data-file');
-            if (avatarId && fileName) {
-                void openRecentCharacterChat(avatarId, fileName);
-            }
-            if (groupId && fileName) {
-                void openRecentGroupChat(groupId, fileName);
-            }
-        });
+        item.addEventListener('click', () => void openRecentChat(item.dataset));
     });
     const hiddenChats = fragment.querySelectorAll('.recentChat.hidden');
     fragment.querySelectorAll('button.showMoreChats').forEach((button) => {
@@ -486,6 +492,77 @@ async function createWelcomePanel(chats, expand = false) {
         });
     }
     return fragment.firstElementChild;
+}
+
+/** @param {{ avatar?: string, group?: string, file?: string, chat_name?: string }} entry */
+function openRecentChat(entry) {
+    const file = entry.file ?? entry.chat_name;
+    if (!file || isChatOpen({ avatar: entry.avatar, groupId: entry.group }, file)) return;
+    if (entry.group) return openRecentGroupChat(entry.group, file);
+    if (entry.avatar) return openRecentCharacterChat(entry.avatar, file);
+}
+
+/** @param {RecentChat[]} chats */
+function renderWorkspaceSessions(chats) {
+    const list = document.getElementById('tt-session-list');
+    const fragment = document.createDocumentFragment();
+
+    for (const [pinned, title] of [[true, t`Pinned`], [false, t`Recent Chats`]]) {
+        const entries = chats.filter(chat => chat.pinned === pinned);
+        if (!entries.length) continue;
+
+        const heading = document.createElement('h2');
+        heading.textContent = title;
+        const rows = document.createElement('ul');
+        for (const entry of entries) {
+            const row = document.createElement('li');
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'tt-workspace-button tt-session-button';
+            button.dataset.sessionKey = PinnedChatsManager.getKey(entry);
+            button.title = entry.chat_name;
+            if (isChatOpen({ avatar: entry.avatar, groupId: entry.group }, entry.chat_name)) {
+                button.setAttribute('aria-current', 'true');
+            }
+            const character = document.createElement('strong');
+            character.textContent = entry.char_name;
+            const name = document.createElement('span');
+            name.textContent = entry.chat_name;
+            button.append(character, name);
+            button.addEventListener('click', () => void openRecentChat(entry));
+            row.append(button);
+            rows.append(row);
+        }
+        fragment.append(heading, rows);
+    }
+
+    if (!fragment.childElementCount) {
+        const empty = document.createElement('p');
+        empty.textContent = t`No recent chats`;
+        fragment.append(empty);
+    }
+
+    keepFocus(() => list.querySelectorAll('[data-session-key]'), button => button.dataset.sessionKey, () => list.replaceChildren(fragment));
+}
+
+function updateWorkspaceTitle() {
+    const title = document.getElementById('tt-active-session');
+    const file = getCurrentChatId();
+    title.hidden = !file;
+    const group = selected_group && groups.find(group => group.id === selected_group);
+    title.textContent = file ? (group?.name || name2 || file) : '';
+    if (file) title.title = file;
+    else title.removeAttribute('title');
+    const home = document.querySelector('#tt-sessions-panel [data-tt-workspace-action="home"]');
+    if (file) home.removeAttribute('aria-current');
+    else home.setAttribute('aria-current', 'page');
+}
+
+function refreshWorkspaceSessions() {
+    updateWorkspaceTitle();
+    void getRecentChats().then(renderWorkspaceSessions).catch(error => {
+        console.error('Could not refresh the workspace sessions', error);
+    });
 }
 
 /**
@@ -729,7 +806,16 @@ async function openRecentChatsSettingsPopup() {
  * @property {boolean} hidden Chat will be hidden by default
  * @property {boolean} pinned Indicates if the chat is pinned
  */
-async function getRecentChats() {
+function getRecentChats() {
+    recentChatsRequest ??= fetchRecentChats().finally(() => { recentChatsRequest = undefined; });
+    return recentChatsRequest;
+}
+
+function compareRecency(a, b) {
+    return sortMoments(timestampToMoment(a.last_mes), timestampToMoment(b.last_mes));
+}
+
+async function fetchRecentChats() {
     const settings = getRecentChatsSettings();
     const response = await fetch('/api/chats/recent', {
         method: 'POST',
@@ -756,7 +842,6 @@ async function getRecentChats() {
         .sort((a, b) => {
             const isAPinned = PinnedChatsManager.isPinned(a.chat);
             const isBPinned = PinnedChatsManager.isPinned(b.chat);
-            const momentComparison = sortMoments(timestampToMoment(a.chat.last_mes), timestampToMoment(b.chat.last_mes));
 
             if (isAPinned && !isBPinned) {
                 return -1;
@@ -765,7 +850,7 @@ async function getRecentChats() {
                 return 1;
             }
 
-            return momentComparison;
+            return compareRecency(a.chat, b.chat);
         });
 
     dataWithEntities.forEach(({ chat, character, group }, index) => {
@@ -894,10 +979,20 @@ export function assignCharacterAsAssistant(characterId) {
 
 export function initWelcomeScreen() {
     PinnedChatsManager.init();
+    initTavernWorkspace(refreshWorkspaceSessions);
 
     const events = [event_types.CHAT_CHANGED, event_types.APP_READY];
     for (const event of events) {
         eventSource.makeFirst(event, openWelcomeScreen);
+        eventSource.on(event, () => {
+            if (getCurrentChatId()) refreshWorkspaceSessions();
+            else updateWorkspaceTitle();
+        });
+    }
+
+    for (const event of [event_types.CHAT_CREATED, event_types.CHAT_DELETED, event_types.GROUP_CHAT_CREATED,
+        event_types.GROUP_CHAT_DELETED, event_types.CHARACTER_DELETED, event_types.GROUP_UPDATED]) {
+        eventSource.on(event, refreshWorkspaceSessions);
     }
 
     eventSource.on(event_types.CHARACTER_MANAGEMENT_DROPDOWN, (target) => {
@@ -915,5 +1010,6 @@ export function initWelcomeScreen() {
 
     eventSource.on(event_types.CHAT_RENAMED, ({ avatarId, groupId, oldFileName, newFileName }) => {
         PinnedChatsManager.rename({ avatar: avatarId, group: groupId, file_name: oldFileName }, newFileName);
+        refreshWorkspaceSessions();
     });
 }

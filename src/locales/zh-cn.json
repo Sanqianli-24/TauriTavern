@@ -1,4 +1,11 @@
 {
+    "Sessions": "会话",
+    "Tavern navigation": "酒馆导航",
+    "Tools": "工具",
+    "Home": "首页",
+    "Pinned": "置顶",
+    "Resume chat": "继续聊天",
+    "Choose a character": "选择角色",
     "Chat could not be created.": "未能创建聊天。",
     "Chat could not be deleted.": "未能删除聊天。",
     "Chat history could not be loaded.": "未能加载聊天记录。",

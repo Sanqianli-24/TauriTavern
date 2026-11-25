@@ -54,6 +54,7 @@
     <link rel="stylesheet" type="text/css" href="css/mobile-styles.css">
     <link rel="stylesheet" type="text/css" href="css/macros.css">
     <link rel="stylesheet" type="text/css" href="css/tauritavern-oled-background.css">
+    <link rel="stylesheet" type="text/css" href="css/tavern-workspace.css">
     <link rel="stylesheet" type="text/css" href="css/user.css">
     <!-- Module scripts are loaded by init.js; avoid modulepreload on mobile WebView to prevent cached preload failures. -->
     <link rel="icon" type="image/x-icon" href="favicon.ico">
@@ -74,7 +75,38 @@
     </div>
     <!-- top bar central settings buttons -->
     <div id="top-bar">
+        <div class="tt-app-bar">
+            <button type="button" id="tt-sessions-toggle" class="tt-workspace-button" data-i18n="[aria-label]Sessions" aria-label="Sessions">
+                <i class="fa-solid fa-bars-staggered" aria-hidden="true"></i>
+            </button>
+            <div class="tt-workspace-brand">TauriTavern</div>
+            <div id="tt-active-session" class="tt-active-session" hidden></div>
+            <button type="button" class="tt-workspace-button tt-compact-characters" data-tt-workspace-action="characters" aria-label="Characters" data-i18n="[aria-label]Characters">
+                <i class="fa-solid fa-address-card" aria-hidden="true"></i>
+            </button>
+            <button type="button" id="tt-tools-toggle" class="tt-workspace-button" aria-controls="top-settings-holder" aria-expanded="false" aria-label="Tools" data-i18n="[aria-label]Tools">
+                <i class="fa-solid fa-sliders" aria-hidden="true"></i>
+                <span data-i18n="Tools">Tools</span>
+            </button>
+        </div>
     </div>
+    <aside id="tt-sessions-panel" style="display: none;">
+        <nav class="tt-workspace-nav" aria-label="Tavern navigation" data-i18n="[aria-label]Tavern navigation">
+            <button type="button" class="tt-workspace-button" data-tt-workspace-action="home">
+                <i class="fa-solid fa-house" aria-hidden="true"></i><span data-i18n="Home">Home</span>
+            </button>
+            <button type="button" class="tt-workspace-button" data-tt-workspace-action="characters">
+                <i class="fa-solid fa-address-card" aria-hidden="true"></i><span data-i18n="Characters">Characters</span>
+            </button>
+            <button type="button" class="tt-workspace-button" data-tt-workspace-action="world">
+                <i class="fa-solid fa-book-atlas" aria-hidden="true"></i><span data-i18n="World Info">World Info</span>
+            </button>
+            <button type="button" class="tt-workspace-button" data-tt-workspace-action="settings">
+                <i class="fa-solid fa-gear" aria-hidden="true"></i><span data-i18n="User Settings">User Settings</span>
+            </button>
+        </nav>
+        <div id="tt-session-list" class="tt-session-list"></div>
+    </aside>
     <div id="top-settings-holder">
         <!-- background selection menu -->
         <div id="ai-config-button" class="drawer">
@@ -6711,6 +6743,9 @@ Using a draft model is preferred. Speculative ngram is not as effective." id="sp
                     </div>
                     <div name="Character List Panel" id="rm_characters_block" class="right_menu">
                         <div id="charListFixedTop">
+                            <div id="form_character_search_form">
+                                <input id="character_search_bar" aria-label="Search characters" class="text_pole textarea_compact width100p" type="search" data-i18n="[placeholder]Search...;[aria-label]Search characters" placeholder="Search..." />
+                            </div>
                             <div id="rm_button_bar">
                                 <button id="rm_button_create" title="Create New Character" data-i18n="[title]Create New Character" class="menu_button fa-solid fa-user-plus" type="button"></button>
                                 <div id="character_import_button" title="Import Character from File" data-i18n="[title]Import Character from File" class="menu_button fa-solid fa-file-import"></div>
@@ -6733,10 +6768,7 @@ Using a draft model is preferred. Speculative ngram is not as effective." id="sp
                                     <option data-field="data_size" data-order="asc" data-i18n="Least tokens">Least tokens</option>
                                     <option data-field="name" data-order="random" data-i18n="Random">Random</option>
                                 </select>
-                                <button type="button" id="rm_button_search" aria-controls="form_character_search_form" aria-expanded="false" class="right_menu_button fa-fw fa-solid fa-search" title="Toggle search bar" data-i18n="[title]Toggle search bar"></button>
-                            </div>
-                            <div id="form_character_search_form">
-                                <input id="character_search_bar" aria-label="Search characters" class="text_pole textarea_compact width100p" type="search" data-i18n="[placeholder]Search...;[aria-label]Search characters" placeholder="Search..." />
+                                <button type="button" id="rm_button_search" aria-controls="form_character_search_form" aria-expanded="true" class="right_menu_button fa-fw fa-solid fa-search" title="Toggle search bar" data-i18n="[title]Toggle search bar"></button>
                             </div>
                             <div class="rm_tag_controls">
                                 <div class="tags rm_tag_filter"></div>

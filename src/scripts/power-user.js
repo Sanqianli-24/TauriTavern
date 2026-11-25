@@ -76,7 +76,7 @@ import { t } from './i18n.js';
 import { extractDominantColor, generateThemePalette, deriveBackgroundName } from './util/ThemeGenerator.js';
 import { getBackgroundPath, isCustomBackgroundUrl } from './backgrounds.js';
 import { CHAT_LAYOUT_CHANGED_EVENT } from '../tauri/main/services/chat-surface/install.js';
-import { resolveThemeBinding } from './theme-binding-policy.js';
+import { migrateNightStudyTheme, resolveThemeBinding } from './theme-binding-policy.js';
 
 export { CHAT_LAYOUT_CHANGED_EVENT };
 
@@ -1783,6 +1783,8 @@ export async function loadPowerUserSettings(settings, data) {
     if (data.themes !== undefined) {
         themes = data.themes;
     }
+
+    if (migrateNightStudyTheme(power_user, themes)) saveSettingsDebounced();
 
     if (data.movingUIPresets !== undefined) {
         movingUIPresets = data.movingUIPresets;

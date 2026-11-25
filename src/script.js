@@ -12929,7 +12929,7 @@ function initCharacterSearch() {
     });
 
     eventSource.on(event_types.APP_READY, () => {
-        const isVisible = accountStorage.getItem(storageKey) === 'true';
+        const isVisible = accountStorage.getItem(storageKey) !== 'false';
         showSearchForm(isVisible);
     });
 }
@@ -13836,6 +13836,7 @@ jQuery(async function () {
             '.text_pole',
             '#toast-container',
             '.select2-results',
+            '[data-tt-workspace-action]',
         ];
 
         for (const id of forbiddenTargets) {

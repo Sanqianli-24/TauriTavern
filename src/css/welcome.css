@@ -59,11 +59,6 @@ body.hideChatAvatars .welcomePanel .recentChatList .recentChat .avatar {
     flex-grow: 1;
 }
 
-.welcomePanel .welcomeHeaderLogo {
-    width: 30px;
-    height: 30px;
-}
-
 .welcomePanel .welcomeShortcuts {
     display: flex;
     flex-direction: row;
@@ -71,12 +66,6 @@ body.hideChatAvatars .welcomePanel .recentChatList .recentChat .avatar {
     align-items: center;
     justify-content: center;
     gap: 5px;
-}
-
-.welcomePanel .welcomeShortcuts .welcomeShortcutsSeparator {
-    margin: 0 2px;
-    color: var(--SmartThemeBorderColor);
-    font-size: calc(var(--mainFontSize) * 1.1);
 }
 
 .welcomeRecent .recentChatList {

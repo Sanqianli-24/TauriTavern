@@ -1,0 +1,13 @@
+{
+    "name": "Night Study",
+    "main_text_color": "rgba(239, 232, 216, 1)",
+    "italics_text_color": "rgba(169, 179, 189, 1)",
+    "underline_text_color": "rgba(168, 198, 205, 1)",
+    "quote_text_color": "rgba(212, 171, 112, 1)",
+    "chat_tint_color": "rgba(17, 25, 35, 1)",
+    "blur_tint_color": "rgba(17, 25, 35, 1)",
+    "user_mes_blur_tint_color": "rgba(28, 40, 53, 1)",
+    "bot_mes_blur_tint_color": "rgba(17, 25, 35, 1)",
+    "shadow_color": "rgba(0, 0, 0, 1)",
+    "border_color": "rgba(53, 65, 78, 1)"
+}

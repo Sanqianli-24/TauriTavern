@@ -1,6 +1,32 @@
 <div class="welcomePanel">
+    <section class="tt-welcome-feature" aria-labelledby="tt-welcome-title">
+        {{#if featured}}
+        <div class="tt-welcome-cover" aria-hidden="true">
+            <div class="avatar"><img src="{{featured.char_thumbnail}}" alt=""></div>
+        </div>
+        <div class="tt-welcome-copy">
+            <h1 id="tt-welcome-title">{{featured.char_name}}</h1>
+            <div class="tt-welcome-chat-name">{{featured.chat_name}}</div>
+            {{#if featured.mes}}<p class="tt-welcome-excerpt">{{featured.mes}}</p>{{/if}}
+            <button type="button" class="tt-welcome-continue tt-workspace-button tt-primary">
+                <span data-i18n="Resume chat">Resume chat</span><i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+            </button>
+        </div>
+        {{else}}
+        <div class="tt-welcome-copy">
+            <h1 id="tt-welcome-title">TauriTavern</h1>
+            <div class="tt-welcome-start">
+                <button type="button" class="tt-workspace-button tt-primary" data-tt-workspace-action="characters">
+                    <i class="fa-solid fa-address-card" aria-hidden="true"></i><span data-i18n="Choose a character">Choose a character</span>
+                </button>
+                <button type="button" class="tt-workspace-button" data-tt-workspace-action="import">
+                    <i class="fa-solid fa-file-import" aria-hidden="true"></i><span data-i18n="Import Character from File">Import Character from File</span>
+                </button>
+            </div>
+        </div>
+        {{/if}}
+    </section>
     <div class="welcomeHeaderTitle">
-        <img src="img/logo.png" alt="SillyTavern Logo" data-i18n="[alt]SillyTavern Logo" class="welcomeHeaderLogo">
         <span class="welcomeHeaderVersionDisplay">{{version}}</span>
         <button type="button" class="mes_button recentChatsSettings" title="Recent chats settings" data-i18n="[title]Recent chats settings">
             <i class="fa-solid fa-gear fa-fw fa-lg"></i>
@@ -26,7 +52,6 @@
                 <i class="fa-brands fa-discord"></i>
                 <span data-i18n="Discord">Discord</span>
             </a>
-            <span class="welcomeShortcutsSeparator">&vert;</span>
             <button type="button" class="openTemporaryChat menu_button menu_button_icon">
                 <i class="fa-solid fa-comment-dots"></i>
                 <span data-i18n="Temporary Chat">Temporary Chat</span>

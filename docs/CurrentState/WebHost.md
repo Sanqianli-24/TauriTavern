@@ -62,7 +62,9 @@ const host = installWebHost({
 | `read_secret_state` | `/api/secrets/read`，连接按钮刷新密钥状态 |
 | `get_character` | `/api/characters/get`，见“角色” |
 | `get_bootstrap_metadata` | `/api/characters/all`、`/api/groups/all`、`/api/avatars/get`、`/api/secrets/read` |
+| `get_all_characters`、`get_all_groups` | 分别读取 `/api/characters/all` 和 `/api/groups/all` |
 | `get_character_chats_by_id` | `/api/characters/chats`，结果须为数组，没有聊天时为 `[]`；ST 这时返回的 `{ error: true }` 会被拒绝 |
+| `list_recent_chat_summaries` | `/api/chats/recent`，为首页和会话侧栏提供角色聊天摘要 |
 | `get_chat_payload_path`；`plugin:fs\|open`、`plugin:fs\|fstat`、`plugin:fs\|read`；`plugin:resources\|close` | `/api/chats/get`，见"聊天读取" |
 | `list_active_agent_runs` | 返回空集合，浏览器宿主不拥有原生 Agent Run |
 | `get_all_backgrounds`、`get_background_folders`、`get_all_background_metadata` | `/api/backgrounds/all`、`/api/backgrounds/folders`、`/api/image-metadata/all` |
