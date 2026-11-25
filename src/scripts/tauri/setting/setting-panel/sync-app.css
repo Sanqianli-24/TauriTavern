@@ -772,3 +772,39 @@
 .tt-sync-device-feedback.is-error {
     color: var(--fullred);
 }
+.tt-cloud-sync-form,
+.tt-cloud-sync-form > label:not(.checkbox_label),
+.tt-cloud-sync-conflict {
+    display: grid;
+    gap: 6px;
+}
+
+.tt-cloud-sync-form,
+.tt-cloud-sync-conflict {
+    margin-block-start: 8px;
+}
+
+.tt-cloud-sync-form input.text_pole,
+.tt-cloud-sync-form select {
+    width: 100%;
+    min-width: 0;
+}
+
+.tt-cloud-sync-form .tt-sync-button,
+.tt-cloud-sync-conflict .tt-sync-button {
+    justify-self: start;
+    max-width: 100%;
+    white-space: normal;
+}
+
+.tt-cloud-recovery-code,
+.tt-cloud-sync-conflict code,
+.tt-cloud-sync .tt-sync-muted {
+    overflow-wrap: anywhere;
+}
+
+.tt-cloud-recovery-qr {
+    width: min(196px, 100%);
+    aspect-ratio: 1;
+    background-color: white;
+}

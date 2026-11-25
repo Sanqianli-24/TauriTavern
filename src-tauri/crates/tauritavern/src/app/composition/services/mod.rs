@@ -268,7 +268,9 @@ pub(super) async fn build(
         &ios_policy,
         local_mutation_gate,
         database_service.clone(),
-    );
+        repositories.vector_repository.clone(),
+    )
+    .await;
 
     Ok(AppServices {
         character_service,
@@ -316,6 +318,7 @@ pub(super) async fn build(
         lan_sync_service: sync_services.lan_sync_service,
         tt_sync_service: sync_services.tt_sync_service,
         sync_automation_service: sync_services.sync_automation_service,
+        cloud_sync_service: sync_services.cloud_sync_service,
         data_archive_service,
         database_service,
         update_service,

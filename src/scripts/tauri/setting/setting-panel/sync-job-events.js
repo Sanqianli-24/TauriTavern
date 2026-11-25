@@ -1,6 +1,9 @@
 export function resolveSyncJobEventAction(payload) {
     const status = payload?.status;
     const origin = syncJobOrigin(payload);
+    if (payload?.job?.endpoint?.type === 'cloud_account') {
+        return { type: 'ignore' };
+    }
 
     if (status === 'progress') {
         if (origin === 'scheduled') {

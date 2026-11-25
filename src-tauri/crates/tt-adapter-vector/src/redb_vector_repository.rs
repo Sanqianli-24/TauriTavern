@@ -1,13 +1,14 @@
 use std::collections::HashSet;
 use std::path::PathBuf;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 use async_trait::async_trait;
 use redb::{Database, ReadableDatabase, ReadableTable, TableDefinition};
 use sha2::{Digest, Sha256};
-use tokio::sync::OnceCell;
+use tokio::sync::{OwnedRwLockWriteGuard, RwLock};
 
 use tt_domain::errors::DomainError;
+use tt_ports::database::DatabaseFileAccess;
 use tt_ports::repositories::vector_repository::{
     VectorMatch, VectorRecord, VectorRepository, VectorScope,
 };
@@ -18,58 +19,17 @@ const SCOPES: TableDefinition<&str, u32> = TableDefinition::new("scopes_v1");
 
 pub struct RedbVectorRepository {
     database_path: PathBuf,
-    database: OnceCell<Arc<Database>>,
+    database: Arc<Mutex<Option<Arc<Database>>>>,
+    file_access: Arc<RwLock<()>>,
 }
 
 impl RedbVectorRepository {
     pub fn new(database_path: PathBuf) -> Self {
         Self {
             database_path,
-            database: OnceCell::new(),
+            database: Arc::new(Mutex::new(None)),
+            file_access: Arc::new(RwLock::new(())),
         }
-    }
-
-    async fn database(&self) -> Result<Arc<Database>, DomainError> {
-        let database_path = self.database_path.clone();
-        self.database
-            .get_or_try_init(|| async move {
-                tokio::task::spawn_blocking(move || {
-                    if let Some(parent) = database_path.parent() {
-                        std::fs::create_dir_all(parent).map_err(|error| {
-                            storage_error("create vector storage directory", error)
-                        })?;
-                    }
-
-                    let database = Database::create(&database_path)
-                        .map_err(|error| storage_error("open vector database", error))?;
-                    let transaction = database
-                        .begin_write()
-                        .map_err(|error| storage_error("initialize vector database", error))?;
-                    {
-                        transaction
-                            .open_table(METADATA)
-                            .map_err(|error| storage_error("initialize metadata table", error))?;
-                        transaction
-                            .open_table(VECTORS)
-                            .map_err(|error| storage_error("initialize vector table", error))?;
-                        transaction
-                            .open_table(SCOPES)
-                            .map_err(|error| storage_error("initialize scope table", error))?;
-                    }
-                    transaction
-                        .commit()
-                        .map_err(|error| storage_error("commit vector database schema", error))?;
-                    Ok(Arc::new(database))
-                })
-                .await
-                .map_err(|error| {
-                    DomainError::InternalError(format!(
-                        "Vector database initialization task failed: {error}"
-                    ))
-                })?
-            })
-            .await
-            .cloned()
     }
 
     async fn run_blocking<T, F>(&self, operation: F) -> Result<T, DomainError>
@@ -77,12 +37,79 @@ impl RedbVectorRepository {
         T: Send + 'static,
         F: FnOnce(Arc<Database>) -> Result<T, DomainError> + Send + 'static,
     {
-        let database = self.database().await?;
-        tokio::task::spawn_blocking(move || operation(database))
-            .await
-            .map_err(|error| {
-                DomainError::InternalError(format!("Vector storage task failed: {error}"))
-            })?
+        let lease = self.file_access.clone().read_owned().await;
+        let database_path = self.database_path.clone();
+        let cached = self.database.clone();
+        tokio::task::spawn_blocking(move || {
+            let _lease = lease;
+            let database = {
+                let mut current = cached
+                    .lock()
+                    .map_err(|error| storage_error("lock vector database", error))?;
+                if let Some(database) = current.as_ref() {
+                    database.clone()
+                } else {
+                    let database = Arc::new(initialize_database(&database_path)?);
+                    *current = Some(database.clone());
+                    database
+                }
+            };
+            operation(database)
+        })
+        .await
+        .map_err(|error| {
+            DomainError::InternalError(format!("Vector storage task failed: {error}"))
+        })?
+    }
+}
+
+fn initialize_database(path: &std::path::Path) -> Result<Database, DomainError> {
+    if let Some(parent) = path.parent() {
+        std::fs::create_dir_all(parent)
+            .map_err(|error| storage_error("create vector storage directory", error))?;
+    }
+    let database =
+        Database::create(path).map_err(|error| storage_error("open vector database", error))?;
+    let transaction = database
+        .begin_write()
+        .map_err(|error| storage_error("initialize vector database", error))?;
+    transaction
+        .open_table(METADATA)
+        .map_err(|error| storage_error("initialize metadata table", error))?;
+    transaction
+        .open_table(VECTORS)
+        .map_err(|error| storage_error("initialize vector table", error))?;
+    transaction
+        .open_table(SCOPES)
+        .map_err(|error| storage_error("initialize scope table", error))?;
+    transaction
+        .commit()
+        .map_err(|error| storage_error("commit vector database schema", error))?;
+    Ok(database)
+}
+
+#[async_trait]
+impl DatabaseFileAccess for RedbVectorRepository {
+    async fn prepare_sync(
+        &self,
+        receiving: bool,
+    ) -> Result<OwnedRwLockWriteGuard<()>, DomainError> {
+        let lease = self.file_access.clone().write_owned().await;
+        if !receiving {
+            return Ok(lease);
+        }
+        let cached = self.database.clone();
+        tokio::task::spawn_blocking(move || {
+            // The next vector operation must reopen the newly applied file.
+            let database = cached
+                .lock()
+                .map_err(|error| storage_error("lock vector database", error))?
+                .take();
+            drop(database);
+            Ok(lease)
+        })
+        .await
+        .map_err(|error| storage_error("close vector database for sync", error))?
     }
 }
 
@@ -581,6 +608,32 @@ mod tests {
         drop(repository);
         let reopened = RedbVectorRepository::new(temp.0.clone());
         assert_eq!(reopened.list_hashes(&other_scope).await.unwrap(), vec![3]);
+    }
+
+    #[tokio::test]
+    async fn queries_reopen_a_vector_database_replaced_by_sync() {
+        let live_file = TempDatabase::new();
+        let incoming_file = TempDatabase::new();
+        let live = RedbVectorRepository::new(live_file.0.clone());
+        let incoming = RedbVectorRepository::new(incoming_file.0.clone());
+        let scope = VectorScope {
+            collection_id: "chat".into(),
+            source: "test".into(),
+            profile: "model".into(),
+        };
+        live.upsert(&scope, vec![record(1, "previous", vec![1.0])])
+            .await
+            .unwrap();
+        incoming
+            .upsert(&scope, vec![record(2, "synced", vec![1.0])])
+            .await
+            .unwrap();
+        drop(incoming);
+
+        let lease = live.prepare_sync(true).await.unwrap();
+        std::fs::copy(&incoming_file.0, &live_file.0).unwrap();
+        drop(lease);
+        assert_eq!(live.list_hashes(&scope).await.unwrap(), vec![2]);
     }
 
     #[tokio::test]

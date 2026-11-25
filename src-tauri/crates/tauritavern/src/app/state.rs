@@ -18,6 +18,7 @@ use tt_application::services::chat_commit_service::ChatCommitService;
 use tt_application::services::chat_completion_service::ChatCompletionService;
 use tt_application::services::chat_history_coordinator::ChatHistoryCoordinator;
 use tt_application::services::chat_service::ChatService;
+use tt_application::services::cloud_sync_service::CloudSyncService;
 use tt_application::services::content_service::ContentService;
 use tt_application::services::data_archive_service::DataArchiveService;
 use tt_application::services::database_service::DatabaseService;
@@ -123,6 +124,7 @@ pub(crate) struct AppServices {
     pub(crate) lan_sync_service: Arc<LanSyncService>,
     pub(crate) tt_sync_service: Arc<TtSyncService>,
     pub(crate) sync_automation_service: Arc<SyncAutomationService>,
+    pub(crate) cloud_sync_service: Option<Arc<CloudSyncService>>,
     pub(crate) data_archive_service: Arc<DataArchiveService>,
     pub(crate) database_service: Arc<DatabaseService>,
     pub(crate) update_service: Arc<UpdateService>,

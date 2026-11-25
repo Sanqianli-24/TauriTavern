@@ -200,6 +200,9 @@ fn resolve_execution(endpoint: &SyncEndpointRef, intent: SyncIntent) -> SyncExec
         (SyncEndpointRef::RemoteServer { .. }, SyncIntent::ReplicateLocalToRemote) => {
             SyncExecutionKind::DirectPush
         }
+        (SyncEndpointRef::CloudAccount, _) | (_, SyncIntent::SynchronizeCloud) => {
+            SyncExecutionKind::Cloud
+        }
     }
 }
 
@@ -296,6 +299,7 @@ fn reconcile_reason(job: &SyncJob) -> &'static str {
     match &job.endpoint {
         SyncEndpointRef::LanPeer { .. } => "lan_sync",
         SyncEndpointRef::RemoteServer { .. } => "tt_sync_pull",
+        SyncEndpointRef::CloudAccount => "cloud_sync",
     }
 }
 

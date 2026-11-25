@@ -4,6 +4,7 @@ pub mod byte_commit;
 pub mod character;
 pub mod chat;
 pub mod client_asset_paths;
+pub mod cloud_sync;
 pub mod database;
 pub mod extension_store;
 pub mod extension_tools;

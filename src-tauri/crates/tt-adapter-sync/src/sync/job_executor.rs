@@ -10,6 +10,7 @@ use ttsync_client::{
 use ttsync_contract::peer::DeviceId;
 use ttsync_contract::sync::SyncMode;
 
+use crate::cloud_sync::CloudSyncRuntime;
 use crate::sync::http_client::{new_sync_client, sync_error_to_domain};
 use crate::sync::lan::client::{connect_peer, request_peer_pull as request_lan_peer_pull};
 use crate::sync::lan::peer_discovery::LanPeerDiscovery;
@@ -34,6 +35,7 @@ pub struct InfrastructureSyncJobExecutor {
     tt_runtime: Arc<TtSyncRuntime>,
     product_user_agent: String,
     database: Arc<dyn DatabaseFileAccess>,
+    cloud: Option<Arc<CloudSyncRuntime>>,
 }
 
 // Sync failures intentionally carry the error and any partial local mutation state together.
@@ -49,6 +51,7 @@ impl InfrastructureSyncJobExecutor {
         product_user_agent: impl Into<String>,
         database: Arc<dyn DatabaseFileAccess>,
         host_kind: HostKind,
+        cloud: Option<Arc<CloudSyncRuntime>>,
     ) -> Self {
         let product_user_agent = product_user_agent.into();
         assert!(
@@ -59,6 +62,7 @@ impl InfrastructureSyncJobExecutor {
         Self {
             host_kind,
             database,
+            cloud,
             lan_sync_root,
             events,
             lan_peer_store,
@@ -260,6 +264,16 @@ impl InfrastructureSyncJobExecutor {
 impl SyncJobExecutor for InfrastructureSyncJobExecutor {
     async fn execute(&self, job: SyncJob) -> Result<SyncExecutionReport, SyncExecutionFailure> {
         match (&job.endpoint, job.execution, &job.policy) {
+            (
+                SyncEndpointRef::CloudAccount,
+                SyncExecutionKind::Cloud,
+                ResolvedSyncPolicy::Cloud { operation },
+            ) => {
+                let cloud = self.cloud.as_ref().ok_or_else(|| {
+                    DomainError::InvalidData("Cloud sync requires Android".into())
+                })?;
+                cloud.execute(&job, operation.clone()).await
+            }
             (
                 SyncEndpointRef::LanPeer { device_id },
                 SyncExecutionKind::Pull,

@@ -1,5 +1,6 @@
 import { invoke } from '../../../tauri-bridge.js';
 import { commitBytes } from '../../../tauri/main/services/files/byte-commit.js';
+import { markCloudSyncDirty } from '../../../tauri/main/services/cloud-sync/local-changes.js';
 import { jsonlRecordsToByteChunks, serializeChatPayload } from './jsonl.js';
 import { coldSourceForPayload } from './cold-swipes.js';
 
@@ -74,4 +75,5 @@ async function commitChatRecords({ target, operation, records, commitReason }) {
         }),
         abort: sessionId => invokeChatCommit('abort_chat_commit', { sessionId }),
     });
+    markCloudSyncDirty();
 }

@@ -80,7 +80,7 @@ use tt_ports::repositories::user_directory_repository::UserDirectoryRepository;
 use tt_ports::repositories::user_endpoint_grant_repository::UserEndpointGrantRepository;
 use tt_ports::repositories::user_repository::UserRepository;
 use tt_ports::repositories::vector_repository::{
-    LocalEmbeddingRepository, RemoteEmbeddingRepository, VectorRepository,
+    LocalEmbeddingRepository, RemoteEmbeddingRepository,
 };
 use tt_ports::repositories::workspace_repository::WorkspaceRepository;
 use tt_ports::repositories::world_info_repository::WorldInfoRepository;
@@ -133,7 +133,7 @@ pub(in crate::app::composition) struct AppRepositories {
     pub(in crate::app::composition) tts_repository: Arc<dyn TtsRepository>,
     pub(in crate::app::composition) world_info_repository: Arc<dyn WorldInfoRepository>,
     pub(in crate::app::composition) update_repository: Arc<dyn UpdateRepository>,
-    pub(in crate::app::composition) vector_repository: Arc<dyn VectorRepository>,
+    pub(in crate::app::composition) vector_repository: Arc<RedbVectorRepository>,
     pub(in crate::app::composition) remote_embedding_repository: Arc<dyn RemoteEmbeddingRepository>,
     pub(in crate::app::composition) local_embedding_repository: Arc<dyn LocalEmbeddingRepository>,
 }
@@ -359,7 +359,7 @@ pub(super) async fn build(
         Arc::new(GitHubUpdateRepository::new(http_client_pool.clone()));
 
     let vector_root = default_user_dir.join("vectors");
-    let vector_repository: Arc<dyn VectorRepository> = Arc::new(RedbVectorRepository::new(
+    let vector_repository = Arc::new(RedbVectorRepository::new(
         vector_root.join("tauritavern-v1.redb"),
     ));
     let remote_embedding_repository: Arc<dyn RemoteEmbeddingRepository> =

@@ -43,6 +43,7 @@ pub(super) fn install<R: Runtime>(builder: tauri::Builder<R>) -> tauri::Builder<
     #[cfg(target_os = "android")]
     let builder = builder
         .plugin(crate::platform::generation_background::plugin())
+        .plugin(crate::platform::cloud_credentials::plugin())
         .plugin(crate::platform::lan_discovery::plugin())
         .plugin(crate::platform::file_transfer::plugin())
         .plugin(crate::platform::speech_synthesis::plugin());

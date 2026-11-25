@@ -3,6 +3,7 @@ use ttsync_contract::dataset::DatasetSelection;
 use ttsync_contract::peer::DeviceId;
 use ttsync_contract::sync::{OverwritePolicy, SyncMode, SyncPhase};
 
+use crate::cloud_sync::CloudSyncOperation;
 use tt_domain::errors::DomainError;
 
 pub const PAIRING_REJECTED_MESSAGE: &str = "Pairing rejected";
@@ -21,6 +22,7 @@ pub struct SyncOperationOptions {
 pub enum SyncEndpointRef {
     LanPeer { device_id: DeviceId },
     RemoteServer { server_device_id: DeviceId },
+    CloudAccount,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
@@ -28,6 +30,7 @@ pub enum SyncEndpointRef {
 pub enum SyncIntent {
     PullToLocal,
     ReplicateLocalToRemote,
+    SynchronizeCloud,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
@@ -36,6 +39,7 @@ pub enum SyncExecutionKind {
     Pull,
     DirectPush,
     RequestRemotePull,
+    Cloud,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -55,6 +59,9 @@ pub enum ResolvedSyncPolicy {
     },
     RemotePullRequest {
         options: SyncOperationOptions,
+    },
+    Cloud {
+        operation: CloudSyncOperation,
     },
 }
 

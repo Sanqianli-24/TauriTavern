@@ -1,5 +1,6 @@
 mod json_file;
 
+pub mod cloud_sync;
 pub mod lan_sync;
 pub mod sync;
 pub mod sync_automation_store;

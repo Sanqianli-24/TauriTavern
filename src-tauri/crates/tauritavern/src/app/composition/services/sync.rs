@@ -9,6 +9,7 @@ use tt_adapter_sync::{
     LanPeerDiscovery, LanPeerStore, LanSyncStore, LocalLanAddressDiscovery, SyncAutomationStore,
     TtSyncRuntime,
 };
+use tt_application::services::cloud_sync_service::CloudSyncService;
 use tt_application::services::lan_sync_service::{
     LanInboundService, LanSyncRuntimeState, LanSyncService,
 };
@@ -25,15 +26,17 @@ pub(super) struct SyncServices {
     pub(super) lan_sync_service: Arc<LanSyncService>,
     pub(super) tt_sync_service: Arc<TtSyncService>,
     pub(super) sync_automation_service: Arc<SyncAutomationService>,
+    pub(super) cloud_sync_service: Option<Arc<CloudSyncService>>,
 }
 
-pub(super) fn build(
+pub(super) async fn build(
     app_handle: &AppHandle,
     data_directory: &DataDirectory,
     data_change_reconciler: Arc<dyn DataChangeReconciler>,
     ios_policy: &IosPolicyActivationReport,
     local_mutation_gate: Arc<Semaphore>,
     database: Arc<dyn tt_ports::database::DatabaseFileAccess>,
+    vector_database: Arc<dyn tt_ports::database::DatabaseFileAccess>,
 ) -> SyncServices {
     let product_user_agent = crate::product::USER_AGENT;
     let lan_runtime_state = Arc::new(LanSyncRuntimeState::new());
@@ -47,6 +50,34 @@ pub(super) fn build(
     let lan_settings_repository: Arc<dyn LanSyncSettingsRepository> = lan_settings_store.clone();
     let lan_peer_repository: Arc<dyn LanPeerRepository> = Arc::new(lan_peer_store.clone());
     let sync_job_events = adapters::sync_job_events(app_handle);
+    #[cfg(target_os = "android")]
+    let cloud = {
+        let credentials = Arc::new(
+            crate::platform::cloud_credentials::AndroidCredentialStore::new(app_handle.clone()),
+        );
+        match credentials.private_root().await {
+            Ok(private_root) => Some(Arc::new(
+                tt_adapter_sync::cloud_sync::CloudSyncRuntime::new(
+                    data_directory.root().to_path_buf(),
+                    private_root,
+                    database.clone(),
+                    vector_database,
+                    credentials,
+                    sync_job_events.clone(),
+                    product_user_agent,
+                ),
+            )),
+            Err(error) => {
+                tracing::warn!(%error, "Cloud sync storage is unavailable");
+                None
+            }
+        }
+    };
+    #[cfg(not(target_os = "android"))]
+    let cloud = {
+        let _ = vector_database;
+        None
+    };
     let pairing_approval = adapters::pairing_approval(app_handle);
     let lan_discovery = LanPeerDiscovery::new(adapters::lan_discovery_host(app_handle));
     let tt_runtime = Arc::new(TtSyncRuntime::new(
@@ -62,6 +93,7 @@ pub(super) fn build(
         product_user_agent,
         database.clone(),
         crate::platform::identity::HOST_IDENTITY.kind,
+        cloud.clone(),
     ));
     let sync_job_coordinator = Arc::new(SyncJobCoordinator::new(
         sync_job_executor,
@@ -113,12 +145,14 @@ pub(super) fn build(
             lan_sync_allowed,
         ),
         adapters::sync_automation_lan_server(lan_sync_service.clone(), lan_sync_allowed),
-        sync_job_coordinator,
+        sync_job_coordinator.clone(),
     ));
 
     SyncServices {
         lan_sync_service,
         tt_sync_service,
         sync_automation_service,
+        cloud_sync_service: cloud
+            .map(|cloud| Arc::new(CloudSyncService::new(cloud, sync_job_coordinator))),
     }
 }

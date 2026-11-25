@@ -2,6 +2,8 @@
 
 import { invoke } from '../../../tauri-bridge.js';
 import { installBackendErrorBridge } from './backend-error-bridge.js';
+import { hostPlatform } from '../../../scripts/util/host-identity.js';
+import { initializeCloudSync } from '../services/cloud-sync/cloud-sync-service.js';
 
 export async function initializeTauriIntegration(
     context,
@@ -29,6 +31,9 @@ export async function initializeTauriIntegration(
     }
 
     await invoke('wait_for_backend_ready');
+    if (hostPlatform() === 'android') {
+        await initializeCloudSync(context);
+    }
     if (perfEnabled) {
         safePerfMark('tt:tauri:init:backend-ready');
     }

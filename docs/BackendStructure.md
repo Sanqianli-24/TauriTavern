@@ -122,6 +122,7 @@ flowchart TB
 tt-adapter-provider-http    -> tt-adapter-http
 tt-adapter-mcp              -> tt-adapter-http
 tt-adapter-tokenization     -> tt-adapter-http
+tt-adapter-sync             -> tt-adapter-http
 tt-adapter-extension        -> tt-adapter-http + tt-adapter-storage-core
 tt-adapter-storage-userdata -> tt-adapter-storage-core
 tt-adapter-media            -> tt-adapter-storage-core

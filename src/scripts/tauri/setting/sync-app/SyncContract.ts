@@ -7,6 +7,8 @@
  * no state, no React and no host access.
  */
 
+import type { CloudSyncController } from './CloudAccountCard';
+
 export type SyncTranslate = (key: string) => string;
 
 // ── Dataset scope (shared with SyncScopeApp) ───────────────────────────────
@@ -165,6 +167,7 @@ export type SyncMainOptions = {
     client: SyncClient;
     actions: SyncActions;
     canScanPairUri?: boolean;
+    cloud?: CloudSyncController;
     tr: SyncTranslate;
 };
 

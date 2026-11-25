@@ -244,6 +244,14 @@ pub fn invoke_handler() -> impl Fn(tauri::ipc::Invoke<tauri::Wry>) -> bool + Sen
         super::sync_automation_commands::sync_automation_get_config,
         super::sync_automation_commands::sync_automation_update_config,
         super::sync_automation_commands::sync_automation_get_status,
+        super::cloud_sync_commands::cloud_sync_status,
+        super::cloud_sync_commands::cloud_sync_preview,
+        super::cloud_sync_commands::cloud_sync_connect,
+        super::cloud_sync_commands::cloud_sync_disconnect,
+        super::cloud_sync_commands::cloud_sync_recovery,
+        super::cloud_sync_commands::cloud_sync_run,
+        super::cloud_sync_commands::cloud_sync_can_apply,
+        super::cloud_sync_commands::cloud_sync_browser,
         // Shared sync commands
         super::sync_commands::sync_get_dataset_catalog,
         // TT-Sync commands

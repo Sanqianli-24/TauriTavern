@@ -329,7 +329,7 @@ pub async fn lan_sync_set_overwrite_policy(
         .map_err(map_command_error("Failed to set sync overwrite policy"))
 }
 
-fn generate_qr_svg(text: &str) -> Result<String, tt_domain::errors::DomainError> {
+pub(super) fn generate_qr_svg(text: &str) -> Result<String, tt_domain::errors::DomainError> {
     let code = QrCode::new(text.as_bytes())
         .map_err(|error| tt_domain::errors::DomainError::InternalError(error.to_string()))?;
     Ok(code

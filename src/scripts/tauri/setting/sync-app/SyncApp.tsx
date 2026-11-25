@@ -1,5 +1,6 @@
 import { StrictMode, useState, useSyncExternalStore } from 'react';
 import { createRoot } from 'react-dom/client';
+import { CloudAccountCard, type CloudSyncController } from './CloudAccountCard';
 
 import {
     automationTargetValue,
@@ -23,6 +24,8 @@ type SyncMainViewProps = {
     controller: SyncController;
     canScanPairUri: boolean;
     tr: SyncTranslate;
+    cloud: CloudSyncController | undefined;
+    accountActions: { scan: (() => Promise<string | null>) | undefined; copy: (text: string) => Promise<unknown> };
 };
 
 /**
@@ -30,7 +33,7 @@ type SyncMainViewProps = {
  * golden zone, and everything rare (pairing links, preferences, automation)
  * folded away underneath.
  */
-function SyncMainView({ controller, canScanPairUri, tr }: SyncMainViewProps) {
+function SyncMainView({ controller, canScanPairUri, tr, cloud, accountActions }: SyncMainViewProps) {
     const state = useSyncExternalStore(controller.subscribe, controller.getSnapshot);
     const [showAllDevices, setShowAllDevices] = useState(false);
     const [pairingOpen, setPairingOpen] = useState(false);
@@ -94,6 +97,8 @@ function SyncMainView({ controller, canScanPairUri, tr }: SyncMainViewProps) {
                     onClick={() => void controller.changeSyncMode()}
                 />
             </header>
+
+            {cloud && <CloudAccountCard controller={cloud} tr={tr} {...accountActions} />}
 
             <SyncOverview
                 status={status}
@@ -457,13 +462,14 @@ export function mountTauriTavernSyncApp(
         throw new Error('TauriTavern Sync mount element is required');
     }
     validateSyncMainBoundary(options);
-    const { client, actions, canScanPairUri = false, tr } = options;
+    const { client, actions, canScanPairUri = false, cloud, tr } = options;
 
     const controller = createSyncController({ client, actions, tr });
     const root = createRoot(mount);
     root.render(
         <StrictMode>
-            <SyncMainView controller={controller} canScanPairUri={canScanPairUri} tr={tr} />
+            <SyncMainView controller={controller} canScanPairUri={canScanPairUri} tr={tr}
+                cloud={cloud} accountActions={{ scan: canScanPairUri ? actions.scanPairUri : undefined, copy: actions.copyText }} />
         </StrictMode>,
     );
     // The initial load is owned by the mount, not by a React effect, so

@@ -11,7 +11,16 @@ pub async fn scan_manifest_with_policy(
     sync_root: PathBuf,
     policy: ResolvedDatasetPolicy,
 ) -> Result<ManifestV2, DomainError> {
-    tokio::task::spawn_blocking(move || scan_manifest_sync(&sync_root, &policy))
+    scan_manifest_with_additions(sync_root, policy, &[], &[]).await
+}
+
+pub(crate) async fn scan_manifest_with_additions(
+    sync_root: PathBuf,
+    policy: ResolvedDatasetPolicy,
+    directories: &'static [&'static str],
+    files: &'static [&'static str],
+) -> Result<ManifestV2, DomainError> {
+    tokio::task::spawn_blocking(move || scan_manifest_sync(&sync_root, &policy, directories, files))
         .await
         .map_err(|error| DomainError::InternalError(error.to_string()))?
 }
@@ -19,10 +28,12 @@ pub async fn scan_manifest_with_policy(
 fn scan_manifest_sync(
     sync_root: &Path,
     policy: &ResolvedDatasetPolicy,
+    directories: &[&str],
+    files: &[&str],
 ) -> Result<ManifestV2, DomainError> {
     let mut entries = Vec::new();
 
-    for directory in policy.scan_roots() {
+    for directory in policy.scan_roots().iter().chain(directories) {
         let root = sync_root.join(directory);
         if !root.exists() {
             continue;
@@ -34,11 +45,11 @@ fn scan_manifest_sync(
             )));
         }
 
-        scan_dir_recursive(sync_root, &root, policy, &mut entries)?;
+        scan_dir_recursive(sync_root, &root, policy, directories, &mut entries)?;
     }
 
-    for file in policy.files() {
-        if !policy.contains_path(file) {
+    for file in policy.files().iter().chain(files) {
+        if !policy.contains_path(file) && !files.contains(file) {
             continue;
         }
 
@@ -64,6 +75,7 @@ fn scan_dir_recursive(
     sync_root: &Path,
     dir: &Path,
     policy: &ResolvedDatasetPolicy,
+    directories: &[&str],
     entries: &mut Vec<ManifestEntryV2>,
 ) -> Result<(), DomainError> {
     for entry in std::fs::read_dir(dir).map_err(|error| {
@@ -108,20 +120,31 @@ fn scan_dir_recursive(
         }
 
         if file_type.is_dir() {
-            if !policy.should_descend_dir(&relative) {
+            if !policy.should_descend_dir(&relative) && !inside_additions(&relative, directories) {
                 continue;
             }
 
-            scan_dir_recursive(sync_root, &entry_path, policy, entries)?;
+            scan_dir_recursive(sync_root, &entry_path, policy, directories, entries)?;
             continue;
         }
 
-        if file_type.is_file() && policy.contains_path(&relative) {
+        if file_type.is_file()
+            && (policy.contains_path(&relative) || inside_additions(&relative, directories))
+        {
             entries.push(make_entry(sync_root, &entry_path)?);
         }
     }
 
     Ok(())
+}
+
+pub(crate) fn inside_additions(path: &str, directories: &[&str]) -> bool {
+    directories.iter().any(|dir| {
+        path == *dir
+            || path
+                .strip_prefix(dir)
+                .is_some_and(|suffix| suffix.starts_with('/'))
+    })
 }
 
 fn is_tauritavern_runtime_cache(relative: &str) -> bool {
@@ -216,7 +239,7 @@ mod tests {
             ttsync_core::dataset::tauri_tavern_full_selection(),
         ] {
             let policy = ResolvedDatasetPolicy::from_selection(&selection).unwrap();
-            let manifest = scan_manifest_sync(&root, &policy).unwrap();
+            let manifest = scan_manifest_sync(&root, &policy, &[], &[]).unwrap();
             let paths: Vec<_> = manifest
                 .entries
                 .iter()
@@ -407,7 +430,7 @@ mod tests {
         .expect("write terminal run index");
 
         let policy = ResolvedDatasetPolicy::tauri_tavern_default();
-        let manifest = scan_manifest_sync(&root, &policy).expect("scan manifest");
+        let manifest = scan_manifest_sync(&root, &policy, &[], &[]).expect("scan manifest");
         let paths = manifest
             .entries
             .into_iter()

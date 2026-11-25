@@ -1,3 +1,5 @@
+#[cfg(target_os = "android")]
+pub(crate) mod cloud_credentials;
 pub mod file_transfer;
 pub mod generation_background;
 pub mod identity;

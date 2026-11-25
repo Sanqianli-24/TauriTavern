@@ -16,6 +16,7 @@ pub mod chat_commit_commands;
 pub mod chat_completion_commands;
 pub mod chat_swipe_commands;
 mod chunk_body;
+pub mod cloud_sync_commands;
 pub mod content_commands;
 pub mod data_archive_commands;
 pub mod database_commands;

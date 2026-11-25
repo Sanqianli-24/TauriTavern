@@ -1,6 +1,7 @@
 import { callGenericPopup, POPUP_RESULT, POPUP_TYPE } from '../../../popup.js';
 import { t, translate } from '../../../i18n.js';
 import { canScanQrCode, scanQrCodeWithBackCancellation } from '../../../../tauri/main/services/barcode-scanner/barcode-scanner-service.js';
+import { getCloudSyncController } from '../../../../tauri/main/services/cloud-sync/cloud-sync-service.js';
 import { invoke, listen, writeClipboardText } from '../../../../tauri-bridge.js';
 import {
     LAN_SYNC_DEVICES_CHANGED_EVENT,
@@ -556,6 +557,7 @@ export async function openSyncPopup() {
     const appHandle = bundle.mountTauriTavernSyncApp(mount, {
         client,
         actions: createSyncActions(client),
+        cloud: getCloudSyncController(),
         canScanPairUri: canScanQrCode(),
         tr: translate,
     });
