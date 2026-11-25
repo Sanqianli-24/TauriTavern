@@ -80,7 +80,7 @@ use tt_ports::repositories::user_directory_repository::UserDirectoryRepository;
 use tt_ports::repositories::user_endpoint_grant_repository::UserEndpointGrantRepository;
 use tt_ports::repositories::user_repository::UserRepository;
 use tt_ports::repositories::vector_repository::{
-    LocalEmbeddingRepository, RemoteEmbeddingRepository,
+    LocalEmbeddingRepository, RemoteEmbeddingRepository, VECTOR_DATABASE_PATH,
 };
 use tt_ports::repositories::workspace_repository::WorkspaceRepository;
 use tt_ports::repositories::world_info_repository::WorldInfoRepository;
@@ -358,9 +358,8 @@ pub(super) async fn build(
     let update_repository: Arc<dyn UpdateRepository> =
         Arc::new(GitHubUpdateRepository::new(http_client_pool.clone()));
 
-    let vector_root = default_user_dir.join("vectors");
     let vector_repository = Arc::new(RedbVectorRepository::new(
-        vector_root.join("tauritavern-v1.redb"),
+        data_root.join(VECTOR_DATABASE_PATH),
     ));
     let remote_embedding_repository: Arc<dyn RemoteEmbeddingRepository> =
         Arc::new(HttpEmbeddingRepository::new(http_client_pool));

@@ -36,7 +36,7 @@ pub(super) async fn build(
     ios_policy: &IosPolicyActivationReport,
     local_mutation_gate: Arc<Semaphore>,
     database: Arc<dyn tt_ports::database::DatabaseFileAccess>,
-    vector_database: Arc<dyn tt_ports::database::DatabaseFileAccess>,
+    vector_database: Arc<dyn tt_ports::repositories::vector_repository::VectorFileAccess>,
 ) -> SyncServices {
     let product_user_agent = crate::product::USER_AGENT;
     let lan_runtime_state = Arc::new(LanSyncRuntimeState::new());

@@ -13,6 +13,7 @@ use tt_contracts::sync::{
     LocalAppliedChangeSummary, ResolvedSyncPolicy, SyncEndpointRef, SyncExecutionKind, SyncIntent,
     SyncJob, SyncJobEvent, SyncOrigin,
 };
+use tt_ports::repositories::vector_repository::VectorFileSnapshot;
 use ttsync_http::tls::{SelfManagedTls, TlsProvider};
 use uuid::Uuid;
 
@@ -41,6 +42,18 @@ struct NoEvents;
 
 impl SyncJobEventPublisher for NoEvents {
     fn publish_sync_job(&self, _: SyncJobEvent) {}
+}
+
+struct EmptyVectorDatabase;
+
+#[async_trait]
+impl VectorFileAccess for EmptyVectorDatabase {
+    async fn prepare_vector_sync(&self) -> Result<VectorFileSnapshot, DomainError> {
+        let lease = crate::sync::workspace::empty_database_access()
+            .prepare_sync(false)
+            .await?;
+        Ok(VectorFileSnapshot::new(lease, None))
+    }
 }
 
 struct Temp(PathBuf);
@@ -191,7 +204,7 @@ impl Replica {
             data.clone(),
             root.join("private"),
             crate::sync::workspace::empty_database_access(),
-            crate::sync::workspace::empty_database_access(),
+            Arc::new(EmptyVectorDatabase),
             Arc::new(MemoryCredentials),
             Arc::new(NoEvents),
             "Cloud sync test",

@@ -2,8 +2,35 @@ use std::collections::HashMap;
 
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
+use tokio::sync::OwnedRwLockWriteGuard;
 
 use tt_domain::errors::DomainError;
+
+pub const VECTOR_DATABASE_PATH: &str = "default-user/vectors/tauritavern-v1.redb";
+
+/// Holds the index closed while Sync reads or replaces its file.
+pub struct VectorFileSnapshot {
+    _lease: OwnedRwLockWriteGuard<()>,
+    fingerprint: Option<String>,
+}
+
+impl VectorFileSnapshot {
+    pub fn new(lease: OwnedRwLockWriteGuard<()>, fingerprint: Option<String>) -> Self {
+        Self {
+            _lease: lease,
+            fingerprint,
+        }
+    }
+
+    pub fn fingerprint(&self) -> Option<&str> {
+        self.fingerprint.as_deref()
+    }
+}
+
+#[async_trait]
+pub trait VectorFileAccess: Send + Sync {
+    async fn prepare_vector_sync(&self) -> Result<VectorFileSnapshot, DomainError>;
+}
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub enum LocalEmbeddingModel {

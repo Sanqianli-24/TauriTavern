@@ -41,7 +41,9 @@ impl<'a> PackWriter<'a> {
         file: &LocalFile,
         previous: Option<&FileVersion>,
     ) -> Result<FileVersion, DomainError> {
-        if let Some(old) = previous.filter(|old| old.hash == file.hash) {
+        if let Some(old) =
+            previous.filter(|old| old.hash == file.hash && old.logical_hash == file.logical_hash)
+        {
             return Ok(old.clone());
         }
         let old_parts = previous
@@ -92,6 +94,7 @@ impl<'a> PackWriter<'a> {
         }
         Ok(FileVersion {
             hash: file.hash.clone(),
+            logical_hash: file.logical_hash.clone(),
             len: file.len,
             modified_ms: file.modified_ms,
             parts,

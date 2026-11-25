@@ -3,14 +3,16 @@ use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 
 use async_trait::async_trait;
-use redb::{Database, ReadableDatabase, ReadableTable, TableDefinition};
+use redb::{
+    Database, DatabaseError, ReadOnlyDatabase, ReadableDatabase, ReadableTable, StorageError,
+    TableDefinition,
+};
 use sha2::{Digest, Sha256};
-use tokio::sync::{OwnedRwLockWriteGuard, RwLock};
+use tokio::sync::RwLock;
 
 use tt_domain::errors::DomainError;
-use tt_ports::database::DatabaseFileAccess;
 use tt_ports::repositories::vector_repository::{
-    VectorMatch, VectorRecord, VectorRepository, VectorScope,
+    VectorFileAccess, VectorFileSnapshot, VectorMatch, VectorRecord, VectorRepository, VectorScope,
 };
 
 const METADATA: TableDefinition<&str, &[u8]> = TableDefinition::new("metadata_v1");
@@ -35,7 +37,7 @@ impl RedbVectorRepository {
     async fn run_blocking<T, F>(&self, operation: F) -> Result<T, DomainError>
     where
         T: Send + 'static,
-        F: FnOnce(Arc<Database>) -> Result<T, DomainError> + Send + 'static,
+        F: FnOnce(&Database) -> Result<T, DomainError> + Send + 'static,
     {
         let lease = self.file_access.clone().read_owned().await;
         let database_path = self.database_path.clone();
@@ -54,7 +56,7 @@ impl RedbVectorRepository {
                     database
                 }
             };
-            operation(database)
+            operation(&database)
         })
         .await
         .map_err(|error| {
@@ -89,28 +91,85 @@ fn initialize_database(path: &std::path::Path) -> Result<Database, DomainError> 
 }
 
 #[async_trait]
-impl DatabaseFileAccess for RedbVectorRepository {
-    async fn prepare_sync(
-        &self,
-        receiving: bool,
-    ) -> Result<OwnedRwLockWriteGuard<()>, DomainError> {
+impl VectorFileAccess for RedbVectorRepository {
+    async fn prepare_vector_sync(&self) -> Result<VectorFileSnapshot, DomainError> {
         let lease = self.file_access.clone().write_owned().await;
-        if !receiving {
-            return Ok(lease);
-        }
         let cached = self.database.clone();
+        let path = self.database_path.clone();
         tokio::task::spawn_blocking(move || {
-            // The next vector operation must reopen the newly applied file.
             let database = cached
                 .lock()
                 .map_err(|error| storage_error("lock vector database", error))?
                 .take();
-            drop(database);
-            Ok(lease)
+            let fingerprint = if let Some(database) = database {
+                Some(vector_fingerprint(database.as_ref())?)
+            } else {
+                match ReadOnlyDatabase::open(&path) {
+                    Ok(database) => Some(vector_fingerprint(&database)?),
+                    Err(DatabaseError::RepairAborted) => {
+                        Some(vector_fingerprint(&initialize_database(&path)?)?)
+                    }
+                    Err(DatabaseError::Storage(StorageError::Io(error)))
+                        if error.kind() == std::io::ErrorKind::NotFound =>
+                    {
+                        None
+                    }
+                    Err(error) => return Err(storage_error("open vector sync snapshot", error)),
+                }
+            };
+            Ok(VectorFileSnapshot::new(lease, fingerprint))
         })
         .await
-        .map_err(|error| storage_error("close vector database for sync", error))?
+        .map_err(|error| storage_error("prepare vector database for sync", error))?
     }
+}
+
+// redb may rewrite allocator pages when an index is merely opened and closed.
+// Compare the committed records so those changes never become sync revisions.
+fn vector_fingerprint(database: &impl ReadableDatabase) -> Result<String, DomainError> {
+    let transaction = database
+        .begin_read()
+        .map_err(|error| storage_error("read vector sync snapshot", error))?;
+    let mut digest = Sha256::new();
+    for definition in [METADATA, VECTORS] {
+        let table = transaction
+            .open_table(definition)
+            .map_err(|error| storage_error("open vector snapshot table", error))?;
+        for row in table
+            .iter()
+            .map_err(|error| storage_error("scan vector snapshot table", error))?
+        {
+            let (key, value) =
+                row.map_err(|error| storage_error("read vector snapshot row", error))?;
+            digest.update([1]);
+            hash_field(&mut digest, key.value().as_bytes());
+            hash_field(&mut digest, value.value());
+        }
+        digest.update([0]);
+    }
+    let scopes = transaction
+        .open_table(SCOPES)
+        .map_err(|error| storage_error("open vector snapshot scopes", error))?;
+    for row in scopes
+        .iter()
+        .map_err(|error| storage_error("scan vector snapshot scopes", error))?
+    {
+        let (key, dimension) =
+            row.map_err(|error| storage_error("read vector snapshot scope", error))?;
+        digest.update([1]);
+        hash_field(&mut digest, key.value().as_bytes());
+        digest.update(dimension.value().to_be_bytes());
+    }
+    Ok(digest
+        .finalize()
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect())
+}
+
+fn hash_field(digest: &mut Sha256, bytes: &[u8]) {
+    digest.update((bytes.len() as u64).to_be_bytes());
+    digest.update(bytes);
 }
 
 #[async_trait]
@@ -630,10 +689,21 @@ mod tests {
             .unwrap();
         drop(incoming);
 
-        let lease = live.prepare_sync(true).await.unwrap();
+        let lease = live.prepare_vector_sync().await.unwrap();
+        let previous = lease.fingerprint().unwrap().to_owned();
         std::fs::copy(&incoming_file.0, &live_file.0).unwrap();
         drop(lease);
         assert_eq!(live.list_hashes(&scope).await.unwrap(), vec![2]);
+        let snapshot = live.prepare_vector_sync().await.unwrap();
+        let updated = snapshot.fingerprint().unwrap().to_owned();
+        assert_ne!(previous, updated);
+        drop(snapshot);
+        assert_eq!(live.list_hashes(&scope).await.unwrap(), vec![2]);
+        let reopened = live.prepare_vector_sync().await.unwrap();
+        assert_eq!(reopened.fingerprint(), Some(updated.as_str()));
+        drop(reopened);
+        let closed = live.prepare_vector_sync().await.unwrap();
+        assert_eq!(closed.fingerprint(), Some(updated.as_str()));
     }
 
     #[tokio::test]

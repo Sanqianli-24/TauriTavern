@@ -7,6 +7,9 @@ use aws_lc_rs::digest::{Context, SHA256};
 use tokio::io::AsyncReadExt;
 use tt_domain::errors::DomainError;
 use tt_ports::database::DatabaseFileAccess;
+use tt_ports::repositories::vector_repository::{
+    VECTOR_DATABASE_PATH, VectorFileAccess, VectorFileSnapshot,
+};
 use ttsync_contract::path::SyncPath;
 use ttsync_core::database::namespace_directory;
 use ttsync_core::dataset::{ResolvedDatasetPolicy, is_excluded, tauri_tavern_full_selection};
@@ -34,7 +37,7 @@ pub(super) struct CloudWorkspace {
     root: PathBuf,
     browser: PathBuf,
     pub(super) database: Arc<dyn DatabaseFileAccess>,
-    pub(super) vector_database: Arc<dyn DatabaseFileAccess>,
+    pub(super) vector_database: Arc<dyn VectorFileAccess>,
     pub(super) policy: ResolvedDatasetPolicy,
 }
 
@@ -44,6 +47,7 @@ pub(super) struct LocalFile {
     pub(super) len: u64,
     pub(super) modified_ms: u64,
     pub(super) hash: String,
+    pub(super) logical_hash: Option<String>,
 }
 
 pub(super) type LocalUnit = BTreeMap<String, LocalFile>;
@@ -65,7 +69,7 @@ impl CloudWorkspace {
         root: PathBuf,
         browser: PathBuf,
         database: Arc<dyn DatabaseFileAccess>,
-        vector_database: Arc<dyn DatabaseFileAccess>,
+        vector_database: Arc<dyn VectorFileAccess>,
     ) -> Self {
         let policy = ResolvedDatasetPolicy::from_selection(&tauri_tavern_full_selection())
             .expect("full sync dataset is valid");
@@ -85,7 +89,11 @@ impl CloudWorkspace {
         ))
     }
 
-    pub(super) async fn scan(&self, cache: &mut ScanCache) -> Result<Scan, DomainError> {
+    pub(super) async fn scan(
+        &self,
+        cache: &mut ScanCache,
+        vector: &VectorFileSnapshot,
+    ) -> Result<Scan, DomainError> {
         let manifest = scan_manifest_with_additions(
             self.root.clone(),
             self.policy.clone(),
@@ -143,6 +151,16 @@ impl CloudWorkspace {
                 len: before.size,
                 modified_ms,
                 hash: hash.clone(),
+                logical_hash: if name == VECTOR_DATABASE_PATH {
+                    Some(
+                        vector
+                            .fingerprint()
+                            .ok_or_else(changed_during_sync)?
+                            .to_owned(),
+                    )
+                } else {
+                    None
+                },
             };
             new_cache.insert(name.clone(), (before, hash));
             scanned
@@ -169,6 +187,7 @@ impl CloudWorkspace {
                     if !self.contains(path)
                         || unit_key(path) != key
                         || file.hash.len() != 43
+                        || !valid_logical_hash(path, file.logical_hash.as_deref())
                         || file.parts.iter().try_fold(0u64, |size, part| {
                             (!part.object.is_nil()
                                 && (1..=CHUNK_SIZE).contains(&part.len)
@@ -244,11 +263,26 @@ fn portable(path: &str) -> bool {
     SyncPath::new(path).is_ok() && !path.contains('\0') && (!cfg!(windows) || !path.contains(':'))
 }
 
+fn valid_logical_hash(path: &str, hash: Option<&str>) -> bool {
+    if path == VECTOR_DATABASE_PATH {
+        hash.is_some_and(|hash| {
+            hash.len() == 64 && hash.bytes().all(|byte| byte.is_ascii_hexdigit())
+        })
+    } else {
+        hash.is_none()
+    }
+}
+
 pub(super) fn stamp(files: Option<&LocalUnit>) -> Stamp {
     files
         .into_iter()
         .flatten()
-        .map(|(path, file)| (path.clone(), file.hash.clone()))
+        .map(|(path, file)| {
+            (
+                path.clone(),
+                file.logical_hash.as_ref().unwrap_or(&file.hash).clone(),
+            )
+        })
         .collect()
 }
 

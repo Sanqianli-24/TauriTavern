@@ -24,6 +24,7 @@ use tt_contracts::sync::{
 use tt_domain::errors::DomainError;
 use tt_ports::cloud_sync::{CloudAccountGateway, CloudCredentialStore};
 use tt_ports::database::DatabaseFileAccess;
+use tt_ports::repositories::vector_repository::VectorFileAccess;
 use tt_ports::sync::SyncJobEventPublisher;
 use ttsync_contract::sync::SyncPhase;
 use zeroize::Zeroizing;
@@ -53,7 +54,7 @@ impl CloudSyncRuntime {
         data_root: PathBuf,
         private_root: PathBuf,
         database: Arc<dyn DatabaseFileAccess>,
-        vector_database: Arc<dyn DatabaseFileAccess>,
+        vector_database: Arc<dyn VectorFileAccess>,
         credentials: Arc<dyn CloudCredentialStore>,
         events: Arc<dyn SyncJobEventPublisher>,
         user_agent: impl Into<String>,
@@ -178,11 +179,11 @@ impl CloudAccountGateway for CloudSyncRuntime {
             self.read_heads(&dav, &key, &mut state).await?;
             state.known
         };
-        let _vector = self.workspace.vector_database.prepare_sync(false).await?;
+        let vector = self.workspace.vector_database.prepare_vector_sync().await?;
         let _db = self.workspace.database.prepare_sync(false).await?;
         let local = self
             .workspace
-            .scan(&mut *self.scan_cache.lock().await)
+            .scan(&mut *self.scan_cache.lock().await, &vector)
             .await?;
         Ok(CloudConnectPreview {
             local_files: local.values().map(|unit| unit.len()).sum(),

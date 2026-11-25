@@ -22,9 +22,17 @@ pub(super) struct Part {
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub(super) struct FileVersion {
     pub(super) hash: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(super) logical_hash: Option<String>,
     pub(super) len: u64,
     pub(super) modified_ms: u64,
     pub(super) parts: Vec<Part>,
+}
+
+impl FileVersion {
+    pub(super) fn fingerprint(&self) -> &str {
+        self.logical_hash.as_deref().unwrap_or(&self.hash)
+    }
 }
 
 pub(super) type Files = BTreeMap<String, FileVersion>;
@@ -66,7 +74,7 @@ impl Revision {
     pub(super) fn stamp(&self) -> Stamp {
         self.files
             .iter()
-            .map(|(path, file)| (path.clone(), file.hash.clone()))
+            .map(|(path, file)| (path.clone(), file.fingerprint().to_owned()))
             .collect()
     }
 

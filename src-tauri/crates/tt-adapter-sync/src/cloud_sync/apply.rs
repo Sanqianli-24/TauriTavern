@@ -32,19 +32,11 @@ impl CloudSyncRuntime {
         if state.apply.is_empty() {
             return Ok(empty_summary());
         }
-        let receiving_vectors = state
-            .apply
-            .iter()
-            .any(|item| item.key.starts_with("default-user/vectors/"));
-        let _vector = self
-            .workspace
-            .vector_database
-            .prepare_sync(receiving_vectors)
-            .await?;
+        let vector = self.workspace.vector_database.prepare_vector_sync().await?;
         let db = self.workspace.database.prepare_sync(false).await?;
         let scan = self
             .workspace
-            .scan(&mut *self.scan_cache.lock().await)
+            .scan(&mut *self.scan_cache.lock().await, &vector)
             .await?;
         drop(db);
 
@@ -201,7 +193,7 @@ async fn apply_unit(
         return apply_database(workspace, root, scratch, reader, item, actual, local).await;
     }
     for (path, version) in &item.version.files {
-        if actual.get(path) == Some(&version.hash) {
+        if actual.get(path).map(String::as_str) == Some(version.fingerprint()) {
             continue;
         }
         let target = workspace.checked_path(path).await?;

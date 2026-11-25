@@ -37,11 +37,11 @@ impl CloudSyncRuntime {
         self.progress(job, SyncPhase::Scanning, 0, 0);
         self.read_heads(dav, key, state).await?;
         // Keep the database maintenance guard only while reading the live file set.
-        let vector = self.workspace.vector_database.prepare_sync(false).await?;
+        let vector = self.workspace.vector_database.prepare_vector_sync().await?;
         let db = self.workspace.database.prepare_sync(false).await?;
         let scan = self
             .workspace
-            .scan(&mut *self.scan_cache.lock().await)
+            .scan(&mut *self.scan_cache.lock().await, &vector)
             .await?;
         let resolution = match operation {
             CloudSyncOperation::Resolve(choice) => Some(choice),
