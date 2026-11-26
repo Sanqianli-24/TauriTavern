@@ -7,8 +7,9 @@ import {
 
 export const PROMPT_CACHE_TTL_VALUES = ['off', '5m', '1h'];
 
+/** @param {unknown} value @param {string} field */
 function requireChatBackupLimit(value, field) {
-    if (!Number.isSafeInteger(value) || value < -1) {
+    if (typeof value !== 'number' || !Number.isSafeInteger(value) || value < -1) {
         throw new Error(`TauriTavern settings: invalid chat backup ${field}`);
     }
 

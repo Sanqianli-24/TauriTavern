@@ -7,16 +7,9 @@
     text-align: left;
 }
 
-.tt-settings-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    padding: 2px 0 4px;
-}
-
-.tt-settings-header b {
-    font-size: calc(var(--mainFontSize) * 1.08);
+.tt-settings-host-group {
+    display: grid;
+    gap: 18px;
 }
 
 .tt-settings-section {

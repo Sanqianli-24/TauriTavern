@@ -21,8 +21,6 @@ const messages = {
     "applyPatchHelp": "Make a precise change to existing text.",
     "shellHelp": "Run scripts and process data in the workspace.",
     "title": "App assistant",
-    "advanced": "Advanced formatting",
-    "back": "Back to assistant",
     "settings": "Assistant settings",
     "contentWidth": "Desktop content width",
     "contentWidthHelp": "Adjust the content area; the drawer background stays the same.",

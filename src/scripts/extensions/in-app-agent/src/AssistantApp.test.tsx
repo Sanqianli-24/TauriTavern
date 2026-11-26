@@ -56,9 +56,23 @@ function harness() {
     };
     return { controller, actions, sendMessage, get snapshot() { return snapshot; }, publish };
 }
-test('IME and modified Enter never send to character chat; switching formatting retains a draft', async () => {
-    document.body.innerHTML = '<div id="advanced-formatting-button" class="drawer"><div class="drawer-toggle"><div class="drawer-icon"></div></div><div id="AdvancedFormatting" class="drawer-content openDrawer"></div></div>';
-    const drawer = installAssistantDrawer(drawers);
+function mountAssistantDrawer() {
+    document.body.innerHTML = `
+        <button id="tt-assistant-entry">App Assistant<span id="tt-assistant-activity"></span></button>
+        <div id="tt-assistant-drawer" class="drawer">
+            <div class="drawer-toggle"></div>
+            <div id="tt-assistant-panel" class="drawer-content openDrawer"></div>
+        </div>
+    `;
+    const panel = document.getElementById('tt-assistant-panel')!;
+    const toggle = () => drawers.setTopLevelDrawerOpen(panel, !drawers.isTopLevelDrawerOpen(panel));
+    document.querySelector('#tt-assistant-drawer .drawer-toggle')!.addEventListener('click', toggle);
+    document.getElementById('tt-assistant-entry')!.addEventListener('click', toggle);
+    return installAssistantDrawer(drawers);
+}
+
+test('IME and modified Enter stay in the assistant; closing and reopening retains its draft', async () => {
+    const drawer = mountAssistantDrawer();
     const h = harness();
     const globalKey = vi.fn();
     document.addEventListener('keydown', globalKey);
@@ -71,8 +85,8 @@ test('IME and modified Enter never send to character chat; switching formatting 
     fireEvent.keyDown(input, { key: 'Enter', altKey: true });
     expect(h.sendMessage).not.toHaveBeenCalled();
     expect(globalKey).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByRole('button', { name: 'Advanced formatting' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Back to assistant' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+    fireEvent.click(screen.getByRole('button', { name: 'App Assistant' }));
     input = screen.getByRole<HTMLTextAreaElement>('textbox', { name: 'Message the app assistant' });
     expect(input.value).toBe('检查设置');
     fireEvent.keyDown(input, { key: 'Enter' });
@@ -81,8 +95,7 @@ test('IME and modified Enter never send to character chat; switching formatting 
 });
 
 test('Escape closes the composer menu before the drawer', () => {
-    document.body.innerHTML = '<div id="advanced-formatting-button" class="drawer"><div class="drawer-toggle"><div class="drawer-icon"></div></div><div id="AdvancedFormatting" class="drawer-content openDrawer"></div></div>';
-    const drawer = installAssistantDrawer(drawers);
+    const drawer = mountAssistantDrawer();
     const close = vi.spyOn(drawer, 'close');
     const h = harness();
     render(<AssistantApp controller={h.controller} actions={h.actions} drawer={drawer} />, { container: drawer.mount });
@@ -115,8 +128,7 @@ test('reasoning precedes the answer and stays expanded when history replaces the
 });
 
 test('stop remains pending until a terminal update and preserves the next draft', async () => {
-    document.body.innerHTML = '<div id="advanced-formatting-button" class="drawer"><div class="drawer-toggle"><div class="drawer-icon"></div></div><div id="AdvancedFormatting" class="drawer-content openDrawer"></div></div>';
-    const drawer = installAssistantDrawer(drawers);
+    const drawer = mountAssistantDrawer();
     const h = harness();
     h.publish({ run: { runId: 'run', active: true, status: 'calling_model' }, activeRun: { sessionId: 'session', runId: 'run', active: true, status: 'calling_model' } });
     render(<AssistantApp controller={h.controller} actions={h.actions} drawer={drawer} />, { container: drawer.mount });
@@ -135,8 +147,7 @@ test('stop remains pending until a terminal update and preserves the next draft'
 });
 
 test('the status strip times an active run from its creation', () => {
-    document.body.innerHTML = '<div id="advanced-formatting-button" class="drawer"><div class="drawer-toggle"><div class="drawer-icon"></div></div><div id="AdvancedFormatting" class="drawer-content openDrawer"></div></div>';
-    const drawer = installAssistantDrawer(drawers);
+    const drawer = mountAssistantDrawer();
     const h = harness();
     const createdAt = new Date(Date.now() - 65_000).toISOString();
     h.publish({ run: { runId: 'run', active: true, status: 'calling_model', createdAt }, activeRun: { sessionId: 'session', runId: 'run', active: true, status: 'calling_model', createdAt } });
@@ -269,8 +280,7 @@ for (const { visible, deny, checked, nextVisible, nextDeny } of [
     { visible: ['test-skill', 'missing-skill'], deny: [], checked: true, nextVisible: ['missing-skill'], nextDeny: [] },
     { visible: [], deny: [], checked: false, nextVisible: ['test-skill'], nextDeny: [] },
 ]) test(`Skill selection preserves visible ${JSON.stringify(visible)} and deny ${JSON.stringify(deny)}`, async () => {
-    document.body.innerHTML = '<div id="advanced-formatting-button" class="drawer"><div class="drawer-toggle"><div class="drawer-icon"></div></div><div id="AdvancedFormatting" class="drawer-content openDrawer"></div></div>';
-    const drawer = installAssistantDrawer(drawers);
+    const drawer = mountAssistantDrawer();
     const h = harness();
     h.snapshot.profile.skills = { visible, deny };
     const saveProfile = vi.fn(() => Promise.resolve());
@@ -294,8 +304,7 @@ for (const { visible, deny, checked, nextVisible, nextDeny } of [
 });
 
 test('cancelling settings releases an unconfirmed Skill import and saving waits for its selection', async () => {
-    document.body.innerHTML = '<div id="advanced-formatting-button" class="drawer"><div class="drawer-toggle"><div class="drawer-icon"></div></div><div id="AdvancedFormatting" class="drawer-content openDrawer"></div></div>';
-    const drawer = installAssistantDrawer(drawers);
+    const drawer = mountAssistantDrawer();
     const h = harness();
     h.snapshot.profile.skills.deny = ['test-skill'];
     const saveProfile = vi.fn(() => Promise.resolve());

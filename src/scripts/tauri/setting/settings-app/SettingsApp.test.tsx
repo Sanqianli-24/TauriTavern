@@ -81,22 +81,20 @@ function createActions(overrides: Partial<SettingsActions> = {}): SettingsAction
         chooseDataRoot: () => Promise.resolve(null),
         chooseWallpaper: () => Promise.resolve(null),
         showHelp: () => Promise.resolve(),
-        manageQuickAccess: () => Promise.resolve(),
         reloadFrontend: () => Promise.resolve(),
         openFrontendLogs: () => Promise.resolve(),
         openBackendLogs: () => Promise.resolve(),
         openLlmApiLogs: () => Promise.resolve(),
-        openSync: () => Promise.resolve(),
         ...overrides,
     };
 }
 
 function createOptions(overrides: Partial<SettingsMountOptions> = {}): SettingsMountOptions {
     return {
+        section: 'backups',
         viewModel: {
             capabilities: {
                 requestProxyAllowed: true,
-                lanSyncAllowed: true,
                 supportsCloseToTrayOnClose: true,
                 supportsDataRootSelection: true,
             },
@@ -153,6 +151,7 @@ test('settings mount enforces its public boundary and unmounts the root', () => 
     const partialActions: Partial<SettingsActions> = createActions();
     delete partialActions.chooseWallpaper;
     expect(() => mountTauriTavernSettingsApp(document.createElement('div'), {
+        section: options.section,
         viewModel: options.viewModel,
         actions: partialActions,
         tr,
@@ -176,11 +175,16 @@ test('draft preserves stored emptiness and exposes synchronous isolated edits', 
     expect(snapshot.dynamicTheme.nightTheme).toBe('');
     expect(snapshot.dynamicTheme.dayWallpaper).toBe(' Day.png');
 
+    act(() => handle.setSection('performance'));
     act(() => {
         fireEvent.change(within(container).getByRole('combobox', { name: 'Panel Runtime' }), {
             target: { value: 'aggressive' },
         });
-        fireEvent.click(within(container).getByRole('checkbox', { name: 'Automatic Chat Backups' }));
+    });
+    act(() => handle.setSection('backups'));
+    act(() => { fireEvent.click(within(container).getByRole('checkbox', { name: 'Automatic Chat Backups' })); });
+    act(() => handle.setSection('dynamic-appearance'));
+    act(() => {
         fireEvent.click(within(container).getByRole('checkbox', { name: 'OLED Pure Black Background' }));
         snapshot = handle.getDraft();
     });
@@ -228,7 +232,7 @@ test('injected storage stats update the compression hint; late stats after unmou
 
 test('dynamic appearance keeps independent summary state and enabling theme focuses Day Theme', async () => {
     const user = userEvent.setup();
-    const { container, handle } = mountApp();
+    const { container, handle } = mountApp(createOptions({ section: 'dynamic-appearance' }));
     const details = disclosure(container, 'Dynamic Theme & Wallpaper');
     // The summary meta shows live state instead of a click hint.
     expect(details.querySelector('.tt-settings-summary-meta small')?.textContent).toBe('Off · Off');
@@ -246,10 +250,9 @@ test('dynamic appearance keeps independent summary state and enabling theme focu
 
 test('iOS proxy repair path: an enabled proxy can be disabled but not re-enabled', async () => {
     const user = userEvent.setup();
-    const options = createOptions();
+    const options = createOptions({ section: 'model-options' });
     options.viewModel.capabilities = {
         requestProxyAllowed: false,
-        lanSyncAllowed: false,
         supportsCloseToTrayOnClose: false,
         supportsDataRootSelection: false,
     };
@@ -278,6 +281,7 @@ test('unknown stored theme stays selectable and wallpaper choosing preserves raw
     const user = userEvent.setup();
     let requested = '';
     const options = createOptions({
+        section: 'dynamic-appearance',
         actions: createActions({
             chooseWallpaper: ({ currentValue }: { currentValue: string }) => {
                 requested = currentValue;

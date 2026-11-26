@@ -1,8 +1,16 @@
-#AdvancedFormatting[data-tt-assistant="assistant"] > :not(#tt-assistant) { display: none !important; }
-/* Keep the host's toolbar and mobile insets; desktop assistants cover the chat composer. The size
-   holds while the drawer is closing, so only display depends on the open state. */
-#AdvancedFormatting[data-tt-assistant="assistant"] { padding: 0; flex-direction: column; height: 100dvh; overflow: hidden; }
-#AdvancedFormatting[data-tt-assistant="assistant"].openDrawer { display: flex; }
+#top-settings-holder #tt-assistant-panel {
+    position: fixed;
+    inset: var(--topBarBlockSize) var(--tt-gutter) auto auto;
+    width: min(640px, calc(100vw - var(--tt-sidebar-width) - 2 * var(--tt-gutter))) !important;
+    min-width: 0 !important;
+    max-height: calc(var(--doc-height) - var(--topBarBlockSize) - var(--tt-gutter));
+    margin: 0;
+    padding: 0;
+    flex-direction: column;
+    height: calc(var(--doc-height) - var(--topBarBlockSize) - var(--tt-gutter));
+    overflow: hidden;
+}
+#tt-assistant-panel.openDrawer { display: flex; }
 #tt-assistant { min-height: 0; min-width: 0; flex: 1 1 auto; }
 
 .ttia-root {
@@ -64,8 +72,6 @@
 .ttia-header-actions { flex-shrink: 0; gap: 2px; }
 .ttia-root .ttia-icon-button { width: 30px; height: 30px; padding: 0; color: var(--ttia-muted); }
 .ttia-root .ttia-icon-button:hover:not(:disabled) { color: var(--ttia-ink); }
-.ttia-root .ttia-advanced { font-size: .8em; color: var(--ttia-muted); padding-inline: 6px; }
-.ttia-root .ttia-advanced:hover:not(:disabled) { color: var(--ttia-ink); }
 .ttia-brand, .ttia-emblem { position: relative; display: inline-grid; place-items: center; font-weight: 600; letter-spacing: -.06em; }
 .ttia-brand { width: 24px; height: 28px; font-size: 19px; }
 .ttia-brand span, .ttia-emblem span { position: absolute; width: 4px; height: 4px; right: 1px; bottom: 7px; border-radius: 50%; background: var(--ttia-accent); }
@@ -393,15 +399,19 @@
 .ttia-import-item { margin-bottom: 14px; font-size: .9em; }
 .ttia-import-item p, .ttia-import-item small { font-size: .85em; color: var(--ttia-muted); }
 .ttia-import-item label { display: flex; align-items: center; gap: 8px; font-size: .85em; }
-.ttia-root .ttia-return { margin: 5px; }
 .ttia-root ::-webkit-scrollbar { width: 6px; height: 6px; }
 .ttia-root ::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--ttia-ink) 18%, transparent); border-radius: 9px; }
 .ttia-root ::-webkit-scrollbar-track { background: transparent; }
 .ttia-root[data-visible="false"] *, .ttia-root[data-visible="false"] *::after { animation-play-state: paused !important; }
-#advanced-formatting-button .drawer-icon[data-tt-assistant-activity="working"]::after,
-#advanced-formatting-button .drawer-icon[data-tt-assistant-activity="unread"]::after { content: ''; position: absolute; right: -1px; top: 0; width: 5px; height: 5px; background: var(--SmartThemeUnderlineColor); border-radius: 50%; }
-#advanced-formatting-button .drawer-icon[data-tt-assistant-activity="working"]::after { animation: ttia-breathe 1.7s ease-in-out infinite; }
-#advanced-formatting-button .drawer-icon[data-tt-assistant-activity] { position: relative; }
+#tt-assistant-entry[data-tt-assistant-activity]::after {
+    content: '';
+    width: 7px;
+    height: 7px;
+    margin-inline-start: auto;
+    background: var(--SmartThemeQuoteColor);
+    border-radius: 50%;
+}
+#tt-assistant-entry[data-tt-assistant-activity="working"]::after { animation: ttia-breathe 1.7s ease-in-out infinite; }
 
 /* ---------- motion ---------- */
 @keyframes ttia-breathe { 0%, 100% { opacity: .45; transform: scale(.85); } 50% { opacity: 1; transform: scale(1); } }
@@ -418,7 +428,6 @@
 @keyframes ttia-emblem-in { from { opacity: 0; transform: scale(.86); } to { opacity: 1; transform: none; } }
 
 @media (min-width: 1001px) {
-    #AdvancedFormatting[data-tt-assistant="assistant"]:has(.ttia-root[data-mobile="false"]) { max-height: calc(100dvh - var(--topBarBlockSize)); }
     .ttia-root[data-mobile="false"] .ttia-assistant { width: var(--ttia-content-width); min-width: min(100%, 28rem); }
 }
 @media (max-width: 1000px) {
@@ -428,7 +437,6 @@
     .ttia-root .ttia-send { border-radius: 12px; }
     .ttia-root .ttia-chip { min-height: 38px; }
     .ttia-root .ttia-menu-item { min-height: 40px; }
-    .ttia-root .ttia-advanced { max-width: 70px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: .72em; padding-inline: 3px; }
     .ttia-root .ttia-fold-toggle { min-height: 42px; }
     .ttia-messages { padding-inline: 16px; }
     .ttia-welcome { padding: 24px 20px; }

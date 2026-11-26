@@ -1,18 +1,21 @@
 import { callGenericPopup, POPUP_RESULT, POPUP_TYPE } from '../../../popup.js';
 import { translate } from '../../../i18n.js';
+import { background_settings, getSystemBackgroundEntries } from '../../../backgrounds.js';
+import { getThemeNames } from '../../../power-user.js';
 import {
     openDialog,
     setDataRoot,
     updateTauriTavernSettings,
 } from '../../../../tauri-bridge.js';
-import { runTaskOrPopup, showErrorPopup } from './popup-utils.js';
+import { runTaskOrPopup } from './popup-utils.js';
 import {
     loadChatBackupStorageStats,
     loadTauriTavernSettingsViewModel,
 } from './settings-view-model.js';
 import { buildTauriTavernSettingsUpdate } from './settings-patch.js';
 import { applyTauriTavernSettingsUpdateEffects } from './settings-effects.js';
-import { callTauriTavernPanelPopup, createTauriTavernPanelPopup } from '../panel-popup.js';
+import { createTauriTavernSettingsState } from './settings-state.js';
+import { callTauriTavernPanelPopup } from '../panel-popup.js';
 import { setOledBackgroundEnabled } from '../oled-background.js';
 
 const SETTINGS_STYLE_ID = 'tauritavern-settings-style';
@@ -137,18 +140,6 @@ async function importSettingsBundle() {
     return import(new URL('../dist/settings.bundle.js', import.meta.url).href);
 }
 
-function readThemeOptions() {
-    const upstreamThemeSelect = document.getElementById('themes');
-    if (!(upstreamThemeSelect instanceof HTMLSelectElement)) {
-        throw new Error('TauriTavern settings: TauriTavern theme selector not found');
-    }
-
-    return Array.from(upstreamThemeSelect.options).map((option) => ({
-        value: option.value,
-        label: option.textContent || option.value,
-    }));
-}
-
 function getBackgroundThumbnailUrl(filename, isAnimated) {
     if (filename.toLowerCase().endsWith('.mp4')) {
         return '/img/No-Image-Placeholder.svg';
@@ -160,17 +151,11 @@ function getBackgroundThumbnailUrl(filename, isAnimated) {
     return isAnimated ? `${url}&static=true` : url;
 }
 
-async function readBackgroundOptions() {
-    const {
-        background_settings,
-        refreshSystemBackgroundEntries,
-    } = await import('../../../backgrounds.js');
-
-    const backgroundEntries = await refreshSystemBackgroundEntries();
-
+function readAppearanceOptions() {
     return {
+        themeOptions: getThemeNames().map(name => ({ value: name, label: name })),
         currentBackground: String(background_settings.name || ''),
-        backgroundOptions: backgroundEntries.map((entry) => ({
+        backgroundOptions: getSystemBackgroundEntries().map((entry) => ({
             value: entry.filename,
             label: entry.filename,
             thumbnailUrl: getBackgroundThumbnailUrl(entry.filename, entry.isAnimated),
@@ -382,15 +367,11 @@ async function chooseDataRoot() {
     return normalized;
 }
 
-function createSettingsActions(backgroundOptions) {
+function createSettingsActions() {
     return {
         chooseDataRoot: () => runTaskOrPopup(chooseDataRoot),
-        chooseWallpaper: (request) => runTaskOrPopup(() => chooseWallpaper(backgroundOptions, request)),
+        chooseWallpaper: (request) => runTaskOrPopup(() => chooseWallpaper(readAppearanceOptions().backgroundOptions, request)),
         showHelp: (topicId) => runTaskOrPopup(() => showHelpTopic(topicId)),
-        manageQuickAccess: () => runTaskOrPopup(async () => {
-            const { openExtensionMenuShortcutsManager } = await import('../extension-menu-shortcuts.js');
-            await openExtensionMenuShortcutsManager();
-        }),
         reloadFrontend: () => runTaskOrPopup(async () => {
             window.location.reload();
         }),
@@ -406,100 +387,62 @@ function createSettingsActions(backgroundOptions) {
             const { openLlmApiLogsPanel } = await import('../dev-logs.js');
             await openLlmApiLogsPanel();
         }),
-        openSync: () => runTaskOrPopup(async () => {
-            const { openSyncPopup } = await import('./sync-popup.js');
-            await openSyncPopup();
-        }),
     };
 }
 
-export async function openTauriTavernSettingsPopup() {
+export async function mountSettingsSession(mount, section) {
     ensureSettingsStyle();
-
-    const [viewModel, bundle, backgroundModel] = await Promise.all([
+    const [viewModel, bundle] = await Promise.all([
         loadTauriTavernSettingsViewModel(),
         importSettingsBundle(),
-        readBackgroundOptions(),
     ]);
-
-    const mount = document.createElement('div');
     const appHandle = bundle.mountTauriTavernSettingsApp(mount, {
         viewModel,
-        themeOptions: readThemeOptions(),
-        backgroundOptions: backgroundModel.backgroundOptions,
-        currentBackground: backgroundModel.currentBackground,
-        actions: createSettingsActions(backgroundModel.backgroundOptions),
+        section,
+        ...readAppearanceOptions(),
+        actions: createSettingsActions(),
         tr: translate,
     });
-    let savedUpdate = null;
+    let values = viewModel.values;
+    let savedDraft = appHandle.getDraft();
 
-    try {
-        const popup = createTauriTavernPanelPopup(mount, POPUP_TYPE.CONFIRM, '', {
-            label: translate('TauriTavern Settings'),
-            okButton: translate('Save'),
-            cancelButton: translate('Close'),
-            allowVerticalScrolling: true,
-            wider: true,
-            wide: false,
-            large: false,
-            onClosing: async (popup) => {
-                if (popup.result !== POPUP_RESULT.AFFIRMATIVE) {
-                    return true;
-                }
-
-                try {
-                    const draft = appHandle.getDraft();
-                    const update = buildTauriTavernSettingsUpdate(viewModel.values, draft);
-
-                    if (
-                        update.requiresChatBackupPurgeConfirmation
-                        && !await confirmChatBackupHistoryPurge()
-                    ) {
-                        return false;
-                    }
-
-                    if (
-                        update.changes.chatVirtualizationEnabled
-                        && update.next.chatVirtualizationEnabled
-                    ) {
-                        await showChatVirtualizationCompatibility();
-                    }
-
-                    if (update.hasChanges) {
-                        const updatedSettings = await updateTauriTavernSettings(update.patch);
-                        savedUpdate = { update, updatedSettings };
-                    }
-
-                    if (draft.oledBackgroundEnabled !== viewModel.values.oledBackgroundEnabled) {
-                        try {
-                            setOledBackgroundEnabled(draft.oledBackgroundEnabled);
-                        } catch (error) {
-                            console.warn('Could not save OLED background setting:', error);
-                            toastr.warning(translate('Could not save OLED background setting.'));
-                        }
-                    }
-                    return true;
-                } catch (error) {
-                    await showErrorPopup(error);
-                    return false;
-                }
-            },
-        });
-        const popupPromise = popup.show();
-        if (viewModel.values.chatBackups.zstdCompressionEnabled) {
-            void loadChatBackupStorageStats()
-                .then(appHandle.setChatBackupStorageStats)
-                .catch(error => console.warn('Chat backup storage stats are unavailable:', error));
-        }
-
-        const result = await popupPromise;
-
-        if (result !== POPUP_RESULT.AFFIRMATIVE || !savedUpdate) {
-            return;
-        }
-
-        applyTauriTavernSettingsUpdateEffects(savedUpdate.update, savedUpdate.updatedSettings);
-    } finally {
-        appHandle.unmount();
+    function readBackupStats() {
+        void loadChatBackupStorageStats()
+            .then(appHandle.setChatBackupStorageStats)
+            .catch(error => console.warn('Chat backup storage stats are unavailable:', error));
     }
+    if (values.chatBackups.zstdCompressionEnabled) readBackupStats();
+
+    return {
+        setSection: next => appHandle.setSection(next, readAppearanceOptions()),
+        subscribe: appHandle.subscribe,
+        isDirty: () => JSON.stringify(appHandle.getDraft()) !== JSON.stringify(savedDraft),
+        unmount: appHandle.unmount,
+        async save() {
+            const draft = appHandle.getDraft();
+            const update = buildTauriTavernSettingsUpdate(values, draft);
+            if (update.requiresChatBackupPurgeConfirmation && !await confirmChatBackupHistoryPurge()) return;
+            if (update.changes.chatVirtualizationEnabled && update.next.chatVirtualizationEnabled) {
+                await showChatVirtualizationCompatibility();
+            }
+            let updatedSettings;
+            if (update.hasChanges) {
+                updatedSettings = await updateTauriTavernSettings(update.patch);
+                values = { ...createTauriTavernSettingsState(updatedSettings), oledBackgroundEnabled: values.oledBackgroundEnabled };
+                // A failure in the device-local write leaves only that change pending.
+                savedDraft = { ...draft, oledBackgroundEnabled: savedDraft.oledBackgroundEnabled };
+            }
+            try {
+                if (draft.oledBackgroundEnabled !== savedDraft.oledBackgroundEnabled) {
+                    setOledBackgroundEnabled(draft.oledBackgroundEnabled);
+                }
+                savedDraft = draft;
+            } finally {
+                if (updatedSettings) {
+                    applyTauriTavernSettingsUpdateEffects(update, updatedSettings);
+                    if (update.changes.chatBackups && values.chatBackups.zstdCompressionEnabled) readBackupStats();
+                }
+            }
+        },
+    };
 }

@@ -8231,18 +8231,24 @@ function toggleChatCompletionForms() {
         $('#model_workers_ai_select').trigger('change');
     }
 
-    $('[data-source]').each(function () {
-        const mode = $(this).data('source-mode');
-        const validSources = $(this).data('source').split(',');
-        const validCustomFormats = String($(this).data('custom-api-format') ?? '').split(',').filter(Boolean);
-        const matchesCustomFormat = oai_settings.chat_completion_source !== chat_completion_sources.CUSTOM
-            || validCustomFormats.length === 0
-            || validCustomFormats.includes(oai_settings.custom_api_format);
-        const matches = validSources.includes(oai_settings.chat_completion_source) && matchesCustomFormat;
-        $(this).toggle(mode !== 'except' ? matches : !matches);
-    });
+    syncChatCompletionControlAvailability();
 
     setToolReasoningControls();
+}
+
+export function isChatCompletionControlAvailable(element) {
+    const { source, sourceMode, customApiFormat } = element.dataset;
+    const { chat_completion_source: active, custom_api_format: format } = oai_settings;
+    const formats = (customApiFormat ?? '').split(',').filter(Boolean);
+    const matches = source.split(',').includes(active)
+        && (active !== chat_completion_sources.CUSTOM || !formats.length || formats.includes(format));
+    return sourceMode === 'except' ? !matches : matches;
+}
+
+export function syncChatCompletionControlAvailability(root = document) {
+    $(root).find('[data-source]').each(function () {
+        $(this).toggle(isChatCompletionControlAvailable(this));
+    });
 }
 
 async function testApiConnection() {

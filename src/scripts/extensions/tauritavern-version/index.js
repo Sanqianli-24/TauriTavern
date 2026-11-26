@@ -134,7 +134,6 @@ async function resolveVersionInfo() {
 }
 
 function renderVersionInfo(info) {
-    $('#tauritavern_version_title').text(localizeTemplate('ttv_version.panel_title', '${0} Version', info.appName));
     $('#tauritavern_version_number').text(info.packageVersion);
     $('#tauritavern_compat_version').text(info.compatBaseline);
     $('#tauritavern_git_info').text(info.gitInfo);

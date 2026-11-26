@@ -8,6 +8,7 @@ const CHAT_BACKUP_STORAGE_UNIT_BYTES = {
     GiB: 1024 * 1024 * 1024,
 };
 
+/** @param {unknown} value */
 function normalizeChatBackupLimit(value) {
     if (
         (typeof value !== 'number' && typeof value !== 'string')
@@ -24,11 +25,12 @@ function normalizeChatBackupLimit(value) {
     return normalized;
 }
 
+/** @param {unknown} value @param {unknown} unit */
 function normalizeChatBackupStorageBytes(value, unit) {
     if (
         (typeof value !== 'number' && typeof value !== 'string')
         || (typeof value === 'string' && value.trim() === '')
-        || !Object.hasOwn(CHAT_BACKUP_STORAGE_UNIT_BYTES, unit)
+        || (unit !== 'MiB' && unit !== 'GiB')
     ) {
         throw new Error('Chat backup storage limit must be -1, 0, or a positive number.');
     }
@@ -49,6 +51,7 @@ function normalizeChatBackupStorageBytes(value, unit) {
     return bytes;
 }
 
+/** @param {{ maxFilesPerPrefix: number, maxTotalFiles: number, maxTotalBytes: number }} settings */
 function isChatBackupHistoryDisabled(settings) {
     return settings.maxFilesPerPrefix === 0
         || settings.maxTotalFiles === 0

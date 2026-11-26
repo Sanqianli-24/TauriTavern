@@ -316,7 +316,11 @@ export function installTopSettingsPanelParking({ manager }) {
             // selects, pagination and editor buttons stay connected for the code that updates them.
             parkedSelector: manager.profile === 'compat' ? '#world_popup_entries_list' : '#wi-holder',
         }),
-        registerDrawerParking(manager, { panelId: 'user-settings-block', parkedSelector: '#user-settings-block-content' }),
+        registerDrawerParking(manager, {
+            panelId: 'user-settings-block',
+            parkedSelector: '#user-settings-block-content',
+            pinnedSelectors: ['#UI-Theme-Block', '#CustomCSS-block'],
+        }),
         registerDrawerParking(manager, { panelId: 'Backgrounds', parkedSelector: '#bg_tabs' }),
     ];
 

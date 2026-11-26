@@ -1,0 +1,349 @@
+#tt-settings-center {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    pointer-events: auto;
+    color: var(--tt-ink);
+    background: color-mix(in srgb, var(--tt-surface) 96%, var(--tt-ink));
+    backdrop-filter: blur(24px);
+    text-shadow: none;
+}
+
+#tt-settings-center [hidden],
+#tt-settings-center[hidden] {
+    display: none !important;
+}
+
+#top-settings-holder.tt-settings-active {
+    z-index: var(--top-settings-holder-max-z-index);
+}
+
+#top-settings-holder.tt-settings-active > .drawer {
+    visibility: hidden;
+}
+
+.tt-settings-bar {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 8px 10px;
+    padding: 8px var(--tt-gutter) 10px;
+    border-block-end: 1px solid var(--tt-edge);
+    background: var(--tt-surface);
+}
+
+.tt-settings-bar h1,
+.tt-settings-page h2 {
+    margin: 0;
+    font-weight: 650;
+    line-height: 1.25;
+}
+
+.tt-settings-bar h1 {
+    font-size: 1.35em;
+    outline: none;
+}
+
+.tt-settings-search {
+    grid-area: 2 / 1 / 3 / -1;
+    display: flex;
+    align-items: center;
+    min-width: 0;
+    padding-inline: 13px;
+    gap: 10px;
+    border: 1px solid var(--tt-edge);
+    border-radius: 9px;
+    background: var(--tt-raised);
+    color: var(--tt-muted);
+}
+
+.tt-settings-search:focus-within {
+    outline: 2px solid var(--tt-accent);
+    outline-offset: 1px;
+}
+
+#tt-settings-search {
+    margin: 0;
+    width: 100%;
+    min-height: 44px;
+    padding: 0;
+    border: 0;
+    outline: none;
+    box-shadow: none;
+    background: transparent;
+    font: inherit;
+    color: var(--tt-ink);
+}
+
+.tt-settings-layout {
+    flex: 1;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    min-height: 0;
+}
+
+#tt-settings-rail {
+    display: none;
+}
+
+#tt-settings-scroll {
+    min-height: 0;
+    overflow: auto;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
+}
+
+.tt-settings-page {
+    width: min(100%, 920px);
+    margin-inline: auto;
+    padding: clamp(16px, 3vw, 34px) var(--tt-gutter) 36px;
+}
+
+.tt-settings-page h2 {
+    font-size: 1.2em;
+    margin-block-end: 12px;
+    outline: none;
+}
+
+.tt-settings-quick {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    margin-block-end: 22px;
+}
+
+.tt-settings-categories,
+.tt-settings-destination-list {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+}
+
+.tt-settings-link {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    min-height: 54px;
+    min-width: 0;
+    gap: 10px;
+    padding: 9px 12px;
+    border: 1px solid var(--tt-edge);
+    border-radius: 10px;
+    background: var(--tt-raised);
+    color: var(--tt-ink);
+    font: inherit;
+    text-align: start;
+    text-shadow: none;
+    cursor: pointer;
+}
+
+.tt-settings-link:hover,
+.tt-settings-link:is([aria-current], [data-selected]) {
+    background: var(--tt-active);
+    border-color: var(--tt-accent);
+}
+
+.tt-settings-link:focus-visible,
+.tt-setting-focused {
+    outline: 2px solid var(--tt-accent);
+    outline-offset: 2px;
+}
+
+.tt-settings-link > i:first-child {
+    width: 1.1em;
+    flex: 0 0 1.1em;
+    color: var(--tt-accent);
+    text-align: center;
+}
+
+.tt-settings-link .tt-settings-chevron {
+    margin-inline-start: auto;
+    font-size: 0.75em;
+    color: var(--tt-muted);
+}
+
+.tt-settings-link-text {
+    min-width: 0;
+    display: grid;
+    gap: 4px;
+    overflow-wrap: anywhere;
+}
+
+.tt-settings-link-text strong {
+    font-weight: 600;
+}
+
+.tt-settings-link-text small {
+    color: var(--tt-muted);
+    font-size: 0.82em;
+}
+
+.tt-settings-quick .tt-settings-link {
+    min-height: 62px;
+}
+
+.tt-settings-quick .tt-settings-link-text small {
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+#tt-settings-panels > .drawer {
+    display: contents;
+}
+
+#tt-settings-panels > .drawer > .drawer-content {
+    position: static !important;
+    width: 100% !important;
+    max-width: none !important;
+    min-width: 0 !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    margin: 0 !important;
+    padding: 0;
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    backdrop-filter: none;
+    clip-path: none;
+    overflow: visible;
+    transition: none;
+}
+
+#tt-settings-panels .drawer-content:not(.openDrawer) {
+    display: none !important;
+}
+
+#tt-settings-panels .scrollableInner {
+    position: static;
+    overflow: visible;
+    max-height: none;
+}
+
+#tt-settings-panels #user-settings-block-content {
+    display: grid;
+    gap: 14px;
+}
+
+#user-settings-block-content > :not([data-tt-settings-group]):not(:has([data-tt-settings-group]:not([hidden]))) {
+    display: none;
+}
+
+#tt-settings-panels #AdvancedFormatting > .flex-container.spaceEvenly {
+    flex-wrap: wrap;
+}
+
+#tt-settings-panels #AdvancedFormatting > .flex-container.spaceEvenly > div {
+    flex: 1 1 min(100%, 235px);
+    min-width: 0;
+}
+
+#tt-settings-panels :is(#theme_bindings, .extensions-drawer-actions) {
+    flex-wrap: wrap;
+}
+
+#tt-settings-panels #rm_api_block .topRightInset,
+#tt-settings-panels #left-nav-panel :is(.topRightInset, #clickSlidersTips) {
+    position: static;
+}
+
+#tt-settings-panels #Backgrounds.openDrawer {
+    display: flex;
+    flex-direction: column;
+}
+
+.tt-settings-language,
+.tt-settings-installed {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-height: 52px;
+    padding-inline: 12px;
+    border-block-end: 1px solid var(--tt-edge);
+}
+
+#tauritavern_version_container:empty,
+.tt-settings-installed:has(+ #tauritavern_version_container:not(:empty)),
+#data_migration_container:not(:empty) + #tt-settings-transfer-unavailable {
+    display: none;
+}
+
+#tt-settings-about > * + * {
+    margin-top: 12px;
+}
+
+.tt-data-transfer {
+    display: grid;
+    gap: 10px;
+}
+
+#tt-settings-sync .tt-sync-header > div:first-child {
+    display: none;
+}
+
+#tt-settings-save-bar {
+    display: flex;
+    flex: none;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 14px;
+    padding: 8px var(--tt-gutter);
+    background: var(--tt-surface);
+    border-block-start: 1px solid var(--tt-edge);
+}
+
+@media (min-width: 840px) {
+    .tt-has-sidebar .tt-settings-layout {
+        grid-template-columns: minmax(192px, 228px) minmax(0, 1fr);
+    }
+
+    .tt-has-sidebar #tt-settings-rail {
+        display: grid;
+        align-content: start;
+        gap: 5px;
+        padding: 20px 10px;
+        overflow: auto;
+        background: var(--tt-surface);
+        border-inline-end: 1px solid var(--tt-edge);
+    }
+
+    #tt-settings-rail .tt-settings-link {
+        min-height: 45px;
+        border-color: transparent;
+        background: transparent;
+    }
+
+    #tt-settings-rail .tt-settings-link:is(:hover, [aria-current], [data-selected]) {
+        background: var(--tt-active);
+        border-color: var(--tt-edge);
+    }
+
+    #tt-settings-rail .tt-settings-chevron {
+        display: none;
+    }
+
+    .tt-settings-bar {
+        grid-template-columns: auto minmax(160px, 1fr) minmax(240px, 420px) auto;
+    }
+
+    .tt-settings-search {
+        grid-area: auto;
+    }
+
+    .tt-has-sidebar .tt-settings-quick {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .tt-has-sidebar .tt-settings-categories {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 360px) {
+    .tt-settings-quick .tt-settings-chevron { display: none; }
+    .tt-settings-quick .tt-settings-link { padding-inline: 8px; }
+}

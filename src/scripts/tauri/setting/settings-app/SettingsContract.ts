@@ -13,7 +13,6 @@ export type SettingsTranslate = (key: string) => string;
 
 export type SettingsCapabilities = {
     requestProxyAllowed: boolean;
-    lanSyncAllowed: boolean;
     supportsCloseToTrayOnClose: boolean;
     supportsDataRootSelection: boolean;
 };
@@ -195,24 +194,31 @@ export type SettingsActions = {
     chooseDataRoot: () => Promise<string | null | undefined>;
     chooseWallpaper: (request: { currentValue: string }) => Promise<string | null | undefined>;
     showHelp: (topicId: string) => Promise<unknown>;
-    manageQuickAccess: () => Promise<unknown>;
     reloadFrontend: () => Promise<unknown>;
     openFrontendLogs: () => Promise<unknown>;
     openBackendLogs: () => Promise<unknown>;
     openLlmApiLogs: () => Promise<unknown>;
-    openSync: () => Promise<unknown>;
 };
 
-export type SettingsMountOptions = {
-    viewModel: SettingsViewModel;
+const SETTINGS_SECTIONS = ['model-options', 'dynamic-appearance', 'backups', 'performance'] as const;
+export type SettingsSectionId = typeof SETTINGS_SECTIONS[number];
+
+export type SettingsAppearanceOptions = {
     themeOptions?: SettingsOption[];
     backgroundOptions?: SettingsBackgroundOption[];
     currentBackground?: string;
+};
+
+export type SettingsMountOptions = SettingsAppearanceOptions & {
+    section: SettingsSectionId;
+    viewModel: SettingsViewModel;
     actions: SettingsActions;
     tr: SettingsTranslate;
 };
 
 export type SettingsHandle = {
+    setSection: (section: SettingsSectionId, appearance?: SettingsAppearanceOptions) => void;
+    subscribe: (listener: () => void) => () => void;
     getDraft: () => SettingsDraft;
     setChatBackupStorageStats: (stats: ChatBackupStorageStats | null) => void;
     unmount: () => void;
@@ -224,12 +230,10 @@ const REQUIRED_ACTIONS = [
     'chooseDataRoot',
     'chooseWallpaper',
     'showHelp',
-    'manageQuickAccess',
     'reloadFrontend',
     'openFrontendLogs',
     'openBackendLogs',
     'openLlmApiLogs',
-    'openSync',
 ] as const;
 
 /** Validates the parts of the JS host boundary that TypeScript cannot see. */
@@ -244,6 +248,9 @@ export function validateSettingsBoundary(
     }
     if (typeof options.tr !== 'function') {
         throw new Error('TauriTavern settings translator is required');
+    }
+    if (!SETTINGS_SECTIONS.some(section => section === options.section)) {
+        throw new Error('TauriTavern settings section is unavailable: ' + String(options.section));
     }
     const actions = plainObject(options.actions) ? options.actions : {};
     for (const name of REQUIRED_ACTIONS) {

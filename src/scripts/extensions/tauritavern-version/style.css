@@ -1,7 +1,6 @@
-/* The host sets inline display:block when the drawer opens, so zone spacing
-   must come from margins rather than a flex context on the content element. */
-#tauritavern_version_settings .inline-drawer-content > * + * {
-    margin-top: 8px;
+#tauritavern_version_settings {
+    display: grid;
+    gap: 10px;
 }
 
 #tauritavern_version_settings [hidden] {

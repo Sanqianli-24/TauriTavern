@@ -6,40 +6,39 @@ export type DrawerState = {
 };
 
 export function installAssistantDrawer(drawers: DrawerState) {
-    const panel = document.getElementById('AdvancedFormatting');
-    const toggle = document.querySelector<HTMLElement>('#advanced-formatting-button .drawer-toggle');
-    const icon = toggle?.querySelector<HTMLElement>('.drawer-icon');
-    if (!panel || !toggle || !icon) throw new Error('in-app-agent: A drawer is unavailable');
+    const panel = document.getElementById('tt-assistant-panel');
+    const toggle = document.querySelector<HTMLElement>('#tt-assistant-drawer .drawer-toggle');
+    const entry = document.getElementById('tt-assistant-entry');
+    const status = document.getElementById('tt-assistant-activity');
+    if (!panel || !toggle || !entry || !status) throw new Error('in-app-agent: Assistant drawer is unavailable');
     const mount = document.createElement('div');
     mount.id = 'tt-assistant';
-    panel.prepend(mount);
-    let mode: 'assistant' | 'advanced' = 'assistant';
-    let state = { open: drawers.isTopLevelDrawerOpen(panel), assistant: true };
-    const listeners = new Set<() => void>();
-    panel.dataset.ttAssistant = mode;
+    panel.append(mount);
+    entry.hidden = false;
 
-    const update = () => {
-        const open = drawers.isTopLevelDrawerOpen(panel);
-        icon.setAttribute('aria-label', tr(mode === 'assistant' ? 'title' : 'advanced'));
-        if (state.open === open && state.assistant === (mode === 'assistant')) return;
-        state = { open, assistant: mode === 'assistant' };
-        listeners.forEach(listener => listener());
-    };
-    const unsubscribe = drawers.subscribeDrawerState(panel, update);
-    update();
     return {
         mount,
-        getSnapshot: () => state,
-        subscribe(listener: () => void) { listeners.add(listener); return () => { listeners.delete(listener); }; },
-        setMode(next: typeof mode) { mode = next; panel.dataset.ttAssistant = mode; update(); },
-        close() { if (drawers.isTopLevelDrawerOpen(panel)) toggle.click(); },
+        getSnapshot: () => drawers.isTopLevelDrawerOpen(panel),
+        subscribe: (listener: () => void) => drawers.subscribeDrawerState(panel, listener),
+        close() {
+            if (!drawers.isTopLevelDrawerOpen(panel)) return;
+            const restoreFocus = panel.contains(document.activeElement);
+            toggle.click();
+            if (restoreFocus) {
+                const target = entry.getClientRects().length ? entry : document.getElementById('tt-sessions-toggle');
+                target?.focus({ preventScroll: true });
+            }
+        },
         setActivity(activity: 'working' | 'unread' | '') {
-            icon.dataset.ttAssistantActivity = activity;
-            icon.title = tr(activity === 'working' ? 'workingBadge' : activity === 'unread' ? 'newReply' : 'title');
+            if (activity) entry.dataset.ttAssistantActivity = activity;
+            else delete entry.dataset.ttAssistantActivity;
+            status.textContent = activity ? tr(activity === 'working' ? 'workingBadge' : 'newReply') : '';
         },
         dispose() {
-            unsubscribe();
-            listeners.clear(); mount.remove(); delete panel.dataset.ttAssistant; delete icon.dataset.ttAssistantActivity;
+            entry.hidden = true;
+            delete entry.dataset.ttAssistantActivity;
+            status.textContent = '';
+            mount.remove();
         },
     };
 }

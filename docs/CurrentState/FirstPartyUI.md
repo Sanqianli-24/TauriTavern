@@ -53,7 +53,7 @@ src/scripts/tauri/setting/sync-app
 | In-App Assistant | `in-app-agent/src/index.ts` | `in-app-agent/dist/index.bundle.js`、`index.bundle.css` | Assistant manifest |
 | MCP Manager | `mcp-manager/src/index.tsx` | `mcp-manager/dist/index.bundle.js` | MCP manifest |
 | 人物关系图 | `character-relationships/src/index.tsx` | `character-relationships/dist/index.bundle.js` | 角色卡编辑区按钮按需加载 |
-| Settings | `settings-app/SettingsApp.tsx` | `setting/dist/settings.bundle.js` | `setting-panel/settings-popup.js` |
+| Settings | `settings-app/SettingsApp.tsx` | `setting/dist/settings.bundle.js` | `setting-panel/settings-session.js` |
 | Dev Logs | `dev-logs-app/DevLogsApp.tsx` | `setting/dist/dev-logs.bundle.js` | `setting/dev-logs.js` |
 | Sync | `sync-app/index.ts` | `setting/dist/sync.bundle.js` | Sync popup 与 listener 外壳 |
 
@@ -79,7 +79,7 @@ Production 与 development 共用 `rspack.config.js` 的 `createRspackConfigs(mo
 
 ### In-App Assistant
 
-- 一个 React island 挂载于原 A 抽屉；SillyTavern 保留外围 DOM 与抽屉行为，隐藏不卸载。
+- 一个 React island 挂载于独立的应用助手抽屉，从会话侧栏打开。SillyTavern 保留外围 DOM 与抽屉行为，隐藏不卸载。
 - `host.ts` 组合公共 API；controller 管理会话、任务与输入草稿，组件管理设置草稿和视图。
 
 启动顺序、消息归属与工具边界见 [应用内助手](InAppAssistant.md)。
@@ -91,9 +91,10 @@ Production 与 development 共用 `rspack.config.js` 的 `createRspackConfigs(mo
 
 ### Settings、Dev Logs 与 Sync
 
-- Raw Settings 外壳创建 Popup、读取 Host 数据并向 React root 注入 typed options、actions 与 translator。
-- React root 不读取外壳内部状态；外壳也不依赖 React component instance，只持有公开 mount handle。
-- 扩展菜单快捷入口是设备本地的展示偏好；Raw Settings 外壳复用上游 Popup 管理选择，并由 DOM adapter 投影到既有 `#extensionsMenu`，不新增 React root 或后端设置。
+- 顶栏的设置页由 `tavern-settings.js` 管理导航和返回。`settings-catalog.js` 把常用项、分类与搜索接到同一组目的地。上游控件保留实例、ID 和事件，设置页用共同的抽屉状态打开，并沿用面板运行时的按需恢复。世界书激活规则随世界书编辑器呈现。
+- 应用设置在首次进入相关小节时加载。宿主外壳读取 Host 数据并注入 typed options、actions 与 translator。会话内共用一份 React 草稿，切换小节保留草稿，保存栏提交原有设置 patch。版本与迁移扩展分别挂载到「应用与更新」和「数据与同步」。
+- 扩展快捷入口由设置页的「扩展与工具」打开，继续使用上游 Popup 管理设备本地偏好，并由 DOM adapter 投影到既有 `#extensionsMenu`。
+- 「数据与同步」和独立同步弹窗共用同一个同步面板挂载函数。
 - 三个功能共享同一 Rspack compiler，但保持独立 bundle 和独立生命周期。
 
 ## 5. 宿主调用契约
@@ -102,7 +103,7 @@ Settings 系列 bundle 通过 named export 暴露挂载函数：
 
 | 挂载函数 | 返回 handle |
 | --- | --- |
-| `mountTauriTavernSettingsApp()` | `getDraft()`、`setChatBackupStorageStats()`、`unmount()` |
+| `mountTauriTavernSettingsApp()` | `setSection()`、`getDraft()`、`subscribe()`、`setChatBackupStorageStats()`、`unmount()` |
 | `mountTauriTavernDevLogsApp()` | `unmount()` |
 | `mountTauriTavernSyncApp()` | `refresh()`、`refreshAutomationStatus()`、`unmount()` |
 | `mountTauriTavernSyncProgressApp()` | `update()`、`unmount()` |

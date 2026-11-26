@@ -60,13 +60,10 @@ import { getCurrentUserHandle } from './user.js';
 import { kai_settings } from './kai-settings.js';
 
 var RPanelPin = document.getElementById('rm_button_panel_pin');
-var LPanelPin = document.getElementById('lm_button_panel_pin');
 var WIPanelPin = document.getElementById('WI_panel_pin');
 
 var RightNavPanel = document.getElementById('right-nav-panel');
 var RightNavDrawerIcon = document.getElementById('rightNavDrawerIcon');
-var LeftNavPanel = document.getElementById('left-nav-panel');
-var LeftNavDrawerIcon = document.getElementById('leftNavDrawerIcon');
 var WorldInfo = document.getElementById('WorldInfo');
 var WIDrawerIcon = document.getElementById('WIDrawerIcon');
 
@@ -458,12 +455,6 @@ function OpenNavPanels() {
             $('#rightNavDrawerIcon').trigger('click');
         }
 
-        //auto-open L nav if locked and previously open
-        if (accountStorage.getItem('LNavLockOn') == 'true' && accountStorage.getItem('LNavOpened') == 'true') {
-            console.debug('RA -- clicking left nav to open');
-            $('#leftNavDrawerIcon').trigger('click');
-        }
-
         //auto-open WI if locked and previously open
         if (accountStorage.getItem('WINavLockOn') == 'true' && accountStorage.getItem('WINavOpened') == 'true') {
             console.debug('RA -- clicking WI to open');
@@ -683,7 +674,6 @@ export async function initMovingUI() {
     if (!isMobile() && power_user.movingUI === true) {
         console.debug('START MOVING UI');
         dragElement($('#sheld'));
-        dragElement($('#left-nav-panel'));
         dragElement($('#right-nav-panel'));
         dragElement($('#WorldInfo'));
         dragElement($('#floatingPrompt'));
@@ -748,24 +738,6 @@ export function initRossMods() {
             }
         }
     });
-    $(LPanelPin).on('click', function () {
-        accountStorage.setItem('LNavLockOn', $(LPanelPin).prop('checked'));
-        if ($(LPanelPin).prop('checked') == true) {
-            //console.log('adding pin class to Left nav');
-            $(LeftNavPanel).addClass('pinnedOpen');
-            $(LeftNavDrawerIcon).addClass('drawerPinnedOpen');
-        } else {
-            //console.log('removing pin class from Left nav');
-            $(LeftNavPanel).removeClass('pinnedOpen');
-            $(LeftNavDrawerIcon).removeClass('drawerPinnedOpen');
-
-            if ($(LeftNavPanel).hasClass('openDrawer') && $('.openDrawer').length > 1) {
-                const toggle = $('#ai-config-button>.drawer-toggle');
-                doNavbarIconClick.call(toggle);
-            }
-        }
-    });
-
     $(WIPanelPin).on('click', async function () {
         accountStorage.setItem('WINavLockOn', $(WIPanelPin).prop('checked'));
         if ($(WIPanelPin).prop('checked') == true) {
@@ -799,19 +771,6 @@ export function initRossMods() {
             $(RightNavDrawerIcon).addClass('drawerPinnedOpen');
         }
         // read the state of left Nav Lock and apply to leftnav classlist
-        $(LPanelPin).prop('checked', accountStorage.getItem('LNavLockOn') === 'true');
-        if (accountStorage.getItem('LNavLockOn') == 'true') {
-            //console.log('setting pin class via local var');
-            $(LeftNavPanel).addClass('pinnedOpen');
-            $(LeftNavDrawerIcon).addClass('drawerPinnedOpen');
-        }
-        if ($(LPanelPin).prop('checked')) {
-            console.debug('setting pin class via checkbox state');
-            $(LeftNavPanel).addClass('pinnedOpen');
-            $(LeftNavDrawerIcon).addClass('drawerPinnedOpen');
-        }
-
-        // read the state of left Nav Lock and apply to leftnav classlist
         $(WIPanelPin).prop('checked', accountStorage.getItem('WINavLockOn') === 'true');
         if (accountStorage.getItem('WINavLockOn') == 'true') {
             //console.log('setting pin class via local var');
@@ -832,13 +791,6 @@ export function initRossMods() {
         if (!$('#rightNavDrawerIcon').hasClass('openIcon')) {
             accountStorage.setItem('NavOpened', 'true');
         } else { accountStorage.setItem('NavOpened', 'false'); }
-    });
-
-    //save state of Left nav being open or closed
-    $('#leftNavDrawerIcon').on('click', function () {
-        if (!$('#leftNavDrawerIcon').hasClass('openIcon')) {
-            accountStorage.setItem('LNavOpened', 'true');
-        } else { accountStorage.setItem('LNavOpened', 'false'); }
     });
 
     //save state of Left nav being open or closed
@@ -1236,7 +1188,7 @@ export function initRossMods() {
 
             if ($('.drawer-content')
                 .not('#WorldInfo')
-                .not('#left-nav-panel')
+                .not('#tt-settings-panels .drawer-content')
                 .not('#right-nav-panel')
                 .not('#floatingPrompt')
                 .not('#cfgConfig')
@@ -1245,7 +1197,7 @@ export function initRossMods() {
                 .is(':visible')) {
                 let visibleDrawerContent = $('.drawer-content:visible')
                     .not('#WorldInfo')
-                    .not('#left-nav-panel')
+                    .not('#tt-settings-panels .drawer-content')
                     .not('#right-nav-panel')
                     .not('#floatingPrompt')
                     .not('#cfgConfig')
@@ -1281,12 +1233,6 @@ export function initRossMods() {
                     return;
                 }
             });
-
-            if ($('#left-nav-panel').is(':visible') &&
-                $(LPanelPin).prop('checked') === false) {
-                $('#leftNavDrawerIcon').trigger('click');
-                return;
-            }
 
             if ($('#right-nav-panel').is(':visible') &&
                 $(RPanelPin).prop('checked') === false) {

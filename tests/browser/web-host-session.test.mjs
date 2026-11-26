@@ -26,6 +26,41 @@ async function openSession(options) {
     }
 }
 
+test('Android settings search returns to its results and preserves the open chat', async () => {
+    const { window, main, failed } = await openSession({ identity: HOSTS.android });
+    const { document } = window;
+    try {
+        await Promise.race([(async () => {
+            const file = main.getCurrentChatId();
+            assert.ok(file);
+            const draft = document.getElementById('send_textarea');
+            draft.value = 'A reply in progress';
+            const toggle = document.getElementById('tt-settings-toggle');
+            toggle.click();
+
+            const search = document.getElementById('tt-settings-search');
+            search.value = 'temperature';
+            search.dispatchEvent(new window.Event('input', { bubbles: true }));
+            const result = [...document.querySelectorAll('#tt-settings-list button')]
+                .find(button => button.querySelector('strong').textContent === 'Temperature');
+            assert.ok(result);
+            result.click();
+            assert.equal(document.getElementById('tt-settings-page-title').textContent, 'Sampling parameters');
+            assert.equal(document.getElementById('left-nav-panel').classList.contains('openDrawer'), true);
+            assert.equal(window.__TAURITAVERN_HANDLE_BACK__(), true);
+            assert.equal(search.value, 'temperature');
+            assert.equal(document.getElementById('left-nav-panel').classList.contains('openDrawer'), false);
+            assert.equal(window.__TAURITAVERN_HANDLE_BACK__(), true);
+            assert.equal(window.__TAURITAVERN_HANDLE_BACK__(), true);
+            assert.equal(toggle.getAttribute('aria-expanded'), 'false');
+            assert.equal(main.getCurrentChatId(), file);
+            assert.equal(draft.value, 'A reply in progress');
+        })(), failed]);
+    } finally {
+        await window.happyDOM.close();
+    }
+});
+
 for (const identity of [HOSTS.windows, HOSTS.android]) {
     test(`Web Host preserves ${identity.kind} session edits and replayed replies across reload`, async () => {
         const first = await openSession({ identity });

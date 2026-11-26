@@ -51,9 +51,8 @@ function RunEnd({ snapshot }: { snapshot: AssistantSnapshot }) {
 
 export function AssistantApp({ controller, actions, drawer }: { controller: AssistantController; actions: AssistantActions; drawer: AssistantDrawer }) {
     const snapshot = useSyncExternalStore(listener => controller.subscribe(listener), controller.getSnapshot);
-    const surface = useSyncExternalStore(listener => drawer.subscribe(listener), drawer.getSnapshot);
+    const visible = useSyncExternalStore(drawer.subscribe, drawer.getSnapshot);
     const models = useSyncExternalStore(actions.models.subscribe, actions.models.getSnapshot);
-    const visible = surface.open && surface.assistant;
     const [view, setView] = useState<'chat' | 'settings' | 'history'>('chat');
     const text = snapshot.draft;
     const [options, setOptions] = useState<SettingsOptions | null>(null);
@@ -212,14 +211,12 @@ export function AssistantApp({ controller, actions, drawer }: { controller: Assi
     const heading = view === 'chat' ? (session ? sessionTitle(session) : tr('title')) : tr(view === 'settings' ? 'settings' : 'history');
     const issue = error ?? snapshot.error;
     return <div className="ttia-root" data-visible={visible} data-mobile={actions.isMobile()} style={{ '--ttia-content-width': `${contentWidth}%` } as CSSProperties}>
-        <button hidden={surface.assistant} type="button" className="ttia-return" onClick={() => drawer.setMode('assistant')}><Icon name="arrow-left" />{tr('back')}</button>
-        <div className="ttia-assistant" hidden={!surface.assistant}>
+        <div className="ttia-assistant">
             <header className="ttia-header"><div className="ttia-heading">
                 {view !== 'chat' ? <button type="button" className="ttia-icon-button" aria-label={tr('conversation')} onClick={() => setView('chat')}><Icon name="arrow-left" /></button>
                     : <span className="ttia-brand" aria-hidden="true">A<span /></span>}
                 <strong title={heading}>{heading}</strong>
             </div><div className="ttia-header-actions">
-                <button type="button" className="ttia-advanced" onClick={() => drawer.setMode('advanced')}>{tr('advanced')}</button>
                 {view === 'chat' && <>
                     <button type="button" className="ttia-icon-button" aria-label={tr('newConversation')} title={tr('newConversation')} disabled={!snapshot.initialized}
                         onClick={() => openSession(null)}><NewConversationIcon /></button>

@@ -55,6 +55,7 @@
     <link rel="stylesheet" type="text/css" href="css/macros.css">
     <link rel="stylesheet" type="text/css" href="css/tauritavern-oled-background.css">
     <link rel="stylesheet" type="text/css" href="css/tavern-workspace.css">
+    <link rel="stylesheet" type="text/css" href="css/tavern-settings.css">
     <link rel="stylesheet" type="text/css" href="css/user.css">
     <!-- Module scripts are loaded by init.js; avoid modulepreload on mobile WebView to prevent cached preload failures. -->
     <link rel="icon" type="image/x-icon" href="favicon.ico">
@@ -73,7 +74,6 @@
             <li><button type="button" id="character_context_menu_delete" data-i18n="Delete">Delete</button></li>
         </ul>
     </div>
-    <!-- top bar central settings buttons -->
     <div id="top-bar">
         <div class="tt-app-bar">
             <button type="button" id="tt-sessions-toggle" class="tt-workspace-button" data-i18n="[aria-label]Sessions" aria-label="Sessions">
@@ -84,9 +84,9 @@
             <button type="button" class="tt-workspace-button tt-compact-characters" data-tt-workspace-action="characters" aria-label="Characters" data-i18n="[aria-label]Characters">
                 <i class="fa-solid fa-address-card" aria-hidden="true"></i>
             </button>
-            <button type="button" id="tt-tools-toggle" class="tt-workspace-button" aria-controls="top-settings-holder" aria-expanded="false" aria-label="Tools" data-i18n="[aria-label]Tools">
-                <i class="fa-solid fa-sliders" aria-hidden="true"></i>
-                <span data-i18n="Tools">Tools</span>
+            <button type="button" id="tt-settings-toggle" class="tt-workspace-button" aria-controls="tt-settings-center" aria-expanded="false">
+                <i class="fa-solid fa-gear" aria-hidden="true"></i>
+                <span data-i18n="Settings">Settings</span>
             </button>
         </div>
     </div>
@@ -98,30 +98,87 @@
             <button type="button" class="tt-workspace-button" data-tt-workspace-action="characters">
                 <i class="fa-solid fa-address-card" aria-hidden="true"></i><span data-i18n="Characters">Characters</span>
             </button>
+            <button type="button" class="tt-workspace-button" data-tt-workspace-action="persona">
+                <i class="fa-solid fa-face-smile" aria-hidden="true"></i><span data-i18n="My Persona">My Persona</span>
+            </button>
             <button type="button" class="tt-workspace-button" data-tt-workspace-action="world">
                 <i class="fa-solid fa-book-atlas" aria-hidden="true"></i><span data-i18n="World Info">World Info</span>
             </button>
-            <button type="button" class="tt-workspace-button" data-tt-workspace-action="settings">
-                <i class="fa-solid fa-gear" aria-hidden="true"></i><span data-i18n="User Settings">User Settings</span>
+            <button type="button" id="tt-assistant-entry" class="tt-workspace-button" data-tt-workspace-action="assistant" hidden aria-describedby="tt-assistant-activity">
+                <i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i><span data-i18n="App Assistant">App Assistant</span>
+                <span id="tt-assistant-activity" class="sr-only" role="status"></span>
             </button>
         </nav>
         <div id="tt-session-list" class="tt-session-list"></div>
     </aside>
     <div id="top-settings-holder">
-        <!-- background selection menu -->
+        <section id="tt-settings-center" aria-labelledby="tt-settings-title" hidden>
+            <header class="tt-settings-bar">
+                <button id="tt-settings-back" class="tt-workspace-button" type="button" aria-label="Back" data-i18n="[aria-label]Back">
+                    <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
+                </button>
+                <h1 id="tt-settings-title" data-i18n="Settings">Settings</h1>
+                <div class="tt-settings-search">
+                    <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+                    <input id="tt-settings-search" type="search" aria-label="Search Settings" placeholder="Search Settings" data-i18n="[aria-label]Search Settings;[placeholder]Search Settings" autocomplete="off">
+                </div>
+                <button id="tt-settings-close" class="tt-workspace-button" type="button" aria-label="Close Settings" data-i18n="[aria-label]Close Settings">
+                    <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+                </button>
+            </header>
+            <div class="tt-settings-layout">
+                <nav id="tt-settings-rail" aria-label="Settings categories" data-i18n="[aria-label]Settings categories"></nav>
+                <div id="tt-settings-scroll">
+                    <div class="tt-settings-page">
+                        <h2 id="tt-settings-page-title" tabindex="-1"></h2>
+                        <div id="tt-settings-list"></div>
+                        <p id="tt-settings-no-results" role="status" data-i18n="No matching settings" hidden>No matching settings</p>
+                        <div id="tt-settings-panels">
+                            <div id="tt-host-settings" hidden>
+                                <div id="tt-host-settings-content"></div>
+                                <p id="tt-host-settings-status" role="status" hidden></p>
+                                <button id="tt-host-settings-retry" type="button" class="tt-workspace-button" data-i18n="Retry" hidden>Retry</button>
+                            </div>
+                            <div id="tt-settings-sync" hidden>
+                                <div id="tt-settings-sync-content"></div>
+                                <p id="tt-settings-sync-status" role="status" hidden></p>
+                                <button id="tt-settings-sync-retry" type="button" class="tt-workspace-button" data-i18n="Retry" hidden>Retry</button>
+                            </div>
+                            <div id="tt-settings-transfer" hidden>
+                                <div id="data_migration_container" class="extension_container"></div>
+                                <p id="tt-settings-transfer-unavailable" data-i18n="Data migration is unavailable">Data migration is unavailable</p>
+                            </div>
+                            <div id="tt-settings-about" hidden>
+                                <div id="UI-language-block" class="tt-settings-language">
+                                    <label for="ui_language_select" data-i18n="Language">Language</label>
+                                    <select id="ui_language_select" class="text_pole">
+                                        <option value="" data-i18n="Default">Default</option>
+                                        <option value="en">English</option>
+                                    </select>
+                                </div>
+                                <div class="tt-settings-installed"><span data-i18n="Installed version">Installed version</span><strong id="version_display"></strong></div>
+                                <div id="tauritavern_version_container" class="extension_container"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <footer id="tt-settings-save-bar" hidden>
+                <span id="tt-settings-save-status" role="status" data-i18n="Unsaved changes">Unsaved changes</span>
+                <button id="tt-settings-save" type="button" class="tt-workspace-button tt-primary" data-i18n="Save">Save</button>
+            </footer>
+        </section>
+        <div id="tt-assistant-drawer" class="drawer">
+            <div class="drawer-toggle">
+                <div class="drawer-icon fa-solid fa-wand-magic-sparkles closedIcon" title="App Assistant" data-i18n="[title]App Assistant"></div>
+            </div>
+            <div id="tt-assistant-panel" class="drawer-content closedDrawer" role="region" aria-labelledby="tt-assistant-entry"></div>
+        </div>
         <div id="ai-config-button" class="drawer">
             <div class="drawer-toggle drawer-header">
                 <div id="leftNavDrawerIcon" class="drawer-icon fa-solid fa-sliders fa-fw closedIcon" title="AI Response Configuration" data-i18n="[title]AI Response Configuration"></div>
             </div>
             <div id="left-nav-panel" class="drawer-content fillLeft closedDrawer" role="region" aria-labelledby="leftNavDrawerIcon">
-                <div id="left-nav-panelheader" class="fa-solid fa-grip drag-grabber"></div>
-                <div id="lm_button_panel_pin_div" title="Locked = AI Configuration panel will stay open" data-i18n="[title]AI Configuration panel will stay open" class="tt-control-shell">
-                    <input type="checkbox" id="lm_button_panel_pin" class="sr-only" aria-label="Lock AI response configuration panel" data-i18n="[aria-label]Lock AI response configuration panel">
-                    <label for="lm_button_panel_pin" class="not_focusable">
-                        <div class="unchecked fa-solid fa-unlock right_menu_button" aria-hidden="true"></div>
-                        <div class="checked fa-solid fa-lock right_menu_button" aria-hidden="true"></div>
-                    </label>
-                </div>
                 <div id="clickSlidersTips" data-i18n="clickslidertips" class="toggle-description wide100p editable-slider-notification">
                     Click slider numbers to input manually.
                 </div>
@@ -131,8 +188,8 @@
                 </a>
                 <div class="scrollableInner">
                     <div class="flex-container flexNoGap" id="ai_response_configuration">
-                        <div id="respective-presets-block" class="width100p">
-                            <div id="kobold_api-presets">
+                        <div id="respective-presets-block" class="width100p" data-tt-settings-group="presets">
+                            <div id="kobold_api-presets" data-tt-settings-api="kobold,koboldhorde">
                                 <div class="margin0 title_restorable standoutHeader">
                                     <strong>
                                         <span data-i18n="kobldpresets" id="settings_preset_label">Kobold Presets</span>
@@ -171,7 +228,7 @@
                                     </div>
                                 </div>
                             </div>
-                            <div id="novel_api-presets">
+                            <div id="novel_api-presets" data-tt-settings-api="novel">
                                 <div class="margin0 title_restorable standoutHeader">
                                     <strong>
                                         <span data-i18n="novelaipresets" id="settings_preset_novel_label">NovelAI Presets</span>
@@ -213,7 +270,7 @@
                                     </div>
                                 </div>
                             </div>
-                            <div id="openai_api-presets">
+                            <div id="openai_api-presets" data-tt-settings-api="openai">
                                 <div>
                                     <div class="margin0 title_restorable standoutHeader">
                                         <strong>
@@ -257,7 +314,7 @@
                                     </div>
                                 </div>
                             </div>
-                            <div id="textgenerationwebui_api-presets">
+                            <div id="textgenerationwebui_api-presets" data-tt-settings-api="textgenerationwebui">
                                 <div class="margin0 title_restorable standoutHeader">
                                     <strong>
                                         <span data-i18n="Text Completion presets" id="settings_preset_textgenerationwebui_label">Text Completion presets</span>
@@ -296,7 +353,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div id="common-gen-settings-block" class="width100p">
+                        <div id="common-gen-settings-block" class="width100p" data-tt-settings-group="presets">
                             <div id="pro-settings-block" class="flex-container gap10h5v justifyCenter">
                                 <div id="amount_gen_block" class="range-block-range-and-counter alignitemscenter flex-container marginBot5 flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
                                     <small><span id="amount_gen_label" data-i18n="response legth(tokens)">Response (tokens)</span></small>
@@ -374,7 +431,7 @@ When this is off, responses will be displayed all at once when they are complete
                             <div name="OldKoboldTempAndRepPenBlock" class="flex-container gap10h5v justifyCenter" id="range_block">
                             </div>
                             -->
-                            <div id="range_block_novel">
+                            <div id="range_block_novel" data-tt-settings-api="novel" data-tt-settings-group="sampling">
                                 <div class="range-block">
                                     <div class="range-block-title"><span data-i18n="Temperature" id="temp_novel_label">
                                         Temperature
@@ -681,8 +738,8 @@ some text
                                     </div>
                                 </div>
                             </div>
-                            <div id="range_block_openai">
-                                <div class="range-block">
+                            <div id="range_block_openai" data-tt-settings-api="openai">
+                                <div class="range-block" data-tt-settings-group="presets">
                                     <label class="checkbox_label" for="oai_max_context_unlocked">
                                         <input id="oai_max_context_unlocked" type="checkbox" aria-describedby="oai_max_context_unlocked_description">
                                         <span data-i18n="Unlocked Context Size">
@@ -696,7 +753,7 @@ some text
                                         </span>
                                     </div>
                                 </div>
-                                <div class="range-block">
+                                <div class="range-block" data-tt-settings-group="presets">
                                     <div class="range-block-title"><span data-i18n="Context Size (tokens)" id="openai_max_context_label">
                                         Context Size (tokens)
                                     </span></div>
@@ -709,7 +766,7 @@ some text
                                         </div>
                                     </div>
                                 </div>
-                                <div class="range-block">
+                                <div class="range-block" data-tt-settings-group="presets">
                                     <div class="range-block-title"><span data-i18n="Max Response Length (tokens)" id="openai_max_tokens_label">
                                         Max Response Length (tokens)
                                     </span></div>
@@ -717,7 +774,7 @@ some text
                                         <input type="number" id="openai_max_tokens" name="openai_max_tokens" class="text_pole" min="1" max="128000" step="1" aria-labelledby="openai_max_tokens_label">
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="openai,custom,xai,aimlapi,moonshot,azure_openai" data-custom-api-format="openai_compat,openai_responses,claude_messages,gemini_interactions">
+                                <div class="range-block" data-source="openai,custom,xai,aimlapi,moonshot,azure_openai" data-custom-api-format="openai_compat,openai_responses,claude_messages,gemini_interactions" data-tt-settings-group="presets">
                                     <div class="range-block-title"><span data-i18n="Multiple swipes per generation" id="n_openai_label">
                                         Multiple swipes per generation
                                     </span></div>
@@ -725,7 +782,7 @@ some text
                                         <input type="number" id="n_openai" name="n_openai" class="text_pole" min="1" value="1" aria-labelledby="n_openai_label">
                                     </div>
                                 </div>
-                                <div data-source="openrouter" class="range-block">
+                                <div data-source="openrouter" class="range-block" data-tt-settings-group="presets">
                                     <div class="range-block-title" data-i18n="[title]Allow compressing requests by removing messages from the middle of the prompt." title="Allow compressing requests by removing messages from the middle of the prompt.">
                                         <span data-i18n="Middle-out Transform" id="openrouter_middleout_label">Middle-out Transform</span>
                                         <a href="https://openrouter.ai/docs/transforms" target="_blank" rel="noreferrer noopener" class="note-link-span fa-solid fa-circle-question" id="openrouter_middleout_docs" aria-label="Docs" aria-labelledby="openrouter_middleout_docs openrouter_middleout_label" data-i18n="[aria-label]Docs"></a>
@@ -738,17 +795,17 @@ some text
                                         </select>
                                     </div>
                                 </div>
-                                <div data-source="openrouter">
+                                <div data-source="openrouter" data-tt-settings-group="presets">
                                     <span data-i18n="Max prompt cost:">Max prompt cost:</span> <span id="openrouter_max_prompt_cost" data-i18n="Unknown">Unknown</span>
                                 </div>
-                                <div data-source="electronhub">
+                                <div data-source="electronhub" data-tt-settings-group="presets">
                                     <span data-i18n="Max prompt cost:">Max prompt cost:</span> <span id="electronhub_max_prompt_cost" data-i18n="Unknown">Unknown</span>
                                 </div>
-                                <div data-source="chutes">
+                                <div data-source="chutes" data-tt-settings-group="presets">
                                     <span data-i18n="Max prompt cost:">Max prompt cost:</span> <span id="chutes_max_prompt_cost" data-i18n="Unknown">Unknown</span>
                                 </div>
-                                <hr>
-                                <div class="range-block">
+                                <hr data-tt-settings-group="presets">
+                                <div class="range-block" data-tt-settings-group="presets">
                                     <label for="stream_toggle" title="Enable OpenAI completion streaming" data-i18n="[title]Enable OpenAI completion streaming" class="checkbox_label widthFreeExpand">
                                         <input id="stream_toggle" type="checkbox" title="Enable OpenAI completion streaming" data-i18n="[title]Enable OpenAI completion streaming" aria-describedby="stream_toggle_description"><span data-i18n="Streaming">
                                             Streaming</span>
@@ -762,7 +819,7 @@ some text
                                         </span>
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="openai,opencode,claude,aws_bedrock,aimlapi,openrouter,ai21,makersuite,vertexai,mistralai,custom,cohere,perplexity,groq,siliconflow,minimax,electronhub,chutes,nanogpt,deepseek,xai,pollinations,moonshot,fireworks,cometapi,azure_openai,zai,workers_ai">
+                                <div class="range-block" data-source="openai,opencode,claude,aws_bedrock,aimlapi,openrouter,ai21,makersuite,vertexai,mistralai,custom,cohere,perplexity,groq,siliconflow,minimax,electronhub,chutes,nanogpt,deepseek,xai,pollinations,moonshot,fireworks,cometapi,azure_openai,zai,workers_ai" data-tt-settings-group="sampling">
                                     <div class="range-block-title"><span id="temp_openai_label" data-i18n="Temperature">
                                         Temperature
                                     </span></div>
@@ -776,7 +833,7 @@ some text
                                     </div>
                                     <small id="temp_openai_description" class="range-input-description" data-i18n="Controls token randomness.">Controls token randomness.</small>
                                 </div>
-                                <div class="range-block" data-source="openai,opencode,aimlapi,openrouter,custom,cohere,perplexity,groq,siliconflow,mistralai,electronhub,nanogpt,deepseek,xai,pollinations,moonshot,fireworks,cometapi,azure_openai,chutes,workers_ai">
+                                <div class="range-block" data-source="openai,opencode,aimlapi,openrouter,custom,cohere,perplexity,groq,siliconflow,mistralai,electronhub,nanogpt,deepseek,xai,pollinations,moonshot,fireworks,cometapi,azure_openai,chutes,workers_ai" data-tt-settings-group="sampling">
                                     <div class="range-block-title"><span data-i18n="Frequency Penalty" id="freq_pen_openai_label">
                                         Frequency Penalty
                                     </span></div>
@@ -789,7 +846,7 @@ some text
                                         </div>
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="openai,opencode,aimlapi,openrouter,custom,cohere,perplexity,groq,siliconflow,mistralai,electronhub,nanogpt,deepseek,xai,pollinations,moonshot,fireworks,cometapi,azure_openai,chutes,workers_ai">
+                                <div class="range-block" data-source="openai,opencode,aimlapi,openrouter,custom,cohere,perplexity,groq,siliconflow,mistralai,electronhub,nanogpt,deepseek,xai,pollinations,moonshot,fireworks,cometapi,azure_openai,chutes,workers_ai" data-tt-settings-group="sampling">
                                     <div class="range-block-title"><span data-i18n="Presence Penalty" id="pres_pen_openai_label">
                                         Presence Penalty
                                     </span></div>
@@ -802,7 +859,7 @@ some text
                                         </div>
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="opencode,claude,aws_bedrock,aimlapi,openrouter,makersuite,vertexai,cohere,perplexity,electronhub,chutes,nanogpt,workers_ai,custom" data-custom-api-format="claude_messages,gemini_generate_content">
+                                <div class="range-block" data-source="opencode,claude,aws_bedrock,aimlapi,openrouter,makersuite,vertexai,cohere,perplexity,electronhub,chutes,nanogpt,workers_ai,custom" data-custom-api-format="claude_messages,gemini_generate_content" data-tt-settings-group="sampling">
                                     <div class="range-block-title"><span data-i18n="Top K" id="top_k_openai_label">
                                         Top K
                                     </span> <i class="fa-solid fa-circle-info opacity50p" title="Top K sets a maximum amount of top tokens that can be chosen from.
@@ -817,7 +874,7 @@ Set to 0 to disable." data-i18n="[title]Top_K_desc" id="top_k_openai_description
                                         </div>
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="openai,opencode,claude,aws_bedrock,aimlapi,openrouter,ai21,makersuite,vertexai,mistralai,custom,cohere,perplexity,groq,siliconflow,minimax,electronhub,chutes,nanogpt,deepseek,xai,pollinations,moonshot,fireworks,cometapi,azure_openai,zai,workers_ai">
+                                <div class="range-block" data-source="openai,opencode,claude,aws_bedrock,aimlapi,openrouter,ai21,makersuite,vertexai,mistralai,custom,cohere,perplexity,groq,siliconflow,minimax,electronhub,chutes,nanogpt,deepseek,xai,pollinations,moonshot,fireworks,cometapi,azure_openai,zai,workers_ai" data-tt-settings-group="sampling">
                                     <div class="range-block-title"><span data-i18n="Top P" id="top_p_openai_label">
                                         Top P
                                     </span> <i class="fa-solid fa-circle-info opacity50p" title="Top P (a.k.a. nucleus sampling) adds up all the top tokens required to add up to the target percentage.
@@ -832,7 +889,7 @@ Set to 1.0 to disable." data-i18n="[title]Top_P_desc" id="top_p_openai_descripti
                                         </div>
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="openrouter,nanogpt,chutes,workers_ai">
+                                <div class="range-block" data-source="openrouter,nanogpt,chutes,workers_ai" data-tt-settings-group="sampling">
                                     <div class="range-block-title"><span data-i18n="Repetition Penalty" id="repetition_penalty_openai_label">
                                         Repetition Penalty
                                     </span></div>
@@ -845,7 +902,7 @@ Set to 1.0 to disable." data-i18n="[title]Top_P_desc" id="top_p_openai_descripti
                                         </div>
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="openrouter,nanogpt,chutes">
+                                <div class="range-block" data-source="openrouter,nanogpt,chutes" data-tt-settings-group="sampling">
                                     <div class="range-block-title"><span data-i18n="Min P" id="min_p_openai_label">
                                         Min P
                                     </span> <i class="fa-solid fa-circle-info opacity50p" title="Min P sets a base minimum probability.
@@ -861,7 +918,7 @@ Set to 0 to disable." data-i18n="[title]Min_P_desc" id="min_p_openai_description
                                         </div>
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="openrouter,nanogpt">
+                                <div class="range-block" data-source="openrouter,nanogpt" data-tt-settings-group="sampling">
                                     <div class="range-block-title"><span data-i18n="Top A" id="top_a_openai_label">
                                         Top A
                                     </span> <i class="fa-solid fa-circle-info opacity50p" title="Top A sets a threshold for token selection based on the square of the highest token probability.
@@ -876,7 +933,7 @@ Set to 0 to disable." data-i18n="[title]Top_A_desc" id="top_a_openai_description
                                         </div>
                                     </div>
                                 </div>
-                                <div class="inline-drawer m-t-1 wide100p">
+                                <div class="inline-drawer m-t-1 wide100p" data-tt-settings-group="completion-prompts">
                                     <div class="inline-drawer-toggle inline-drawer-header">
                                         <b><span id="quick_prompts_label" data-i18n="Quick Prompts Edit">Quick Prompts Edit</span></b>
                                         <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down" aria-labelledby="quick_prompts_label"></div>
@@ -905,7 +962,7 @@ Set to 0 to disable." data-i18n="[title]Top_A_desc" id="top_a_openai_description
                                         </div>
                                     </div>
                                 </div>
-                                <div class="inline-drawer wide100p">
+                                <div class="inline-drawer wide100p" data-tt-settings-group="completion-prompts">
                                     <div class="inline-drawer-toggle inline-drawer-header">
                                         <b><span id="utility_prompts_label" data-i18n="Utility Prompts">Utility Prompts</span></b>
                                         <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down" aria-labelledby="utility_prompts_label"></div>
@@ -1064,7 +1121,7 @@ Set to 0 to disable." data-i18n="[title]Top_A_desc" id="top_a_openai_description
                                         </div>
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="openai,openrouter,mistralai,custom,cohere,groq,electronhub,chutes,nanogpt,xai,pollinations,aimlapi,makersuite,vertexai,azure_openai,workers_ai">
+                                <div class="range-block" data-source="openai,openrouter,mistralai,custom,cohere,groq,electronhub,chutes,nanogpt,xai,pollinations,aimlapi,makersuite,vertexai,azure_openai,workers_ai" data-tt-settings-group="sampling">
                                     <div class="range-block-title justifyLeft"><span data-i18n="Seed" id="seed_openai_label">
                                         Seed
                                     </span></div>
@@ -1078,7 +1135,7 @@ Set to 0 to disable." data-i18n="[title]Top_A_desc" id="top_a_openai_description
                             </div>
                         </div>
                         <div id="advanced-ai-config-block" class="width100p">
-                            <div id="kobold_api-settings">
+                            <div id="kobold_api-settings" data-tt-settings-api="kobold,koboldhorde" data-tt-settings-group="sampling">
                                 <div class="flex-container gap10h5v justifyCenter">
                                     <div class="alignitemscenter flex-container flexFlowColumn flexBasis30p flexGrow flexShrink gap0">
                                         <small>
@@ -1275,7 +1332,7 @@ Good for story writing, but should not be used for chat and instruct mode." data
                                     </div>
                                 </div>
                             </div><!-- end of kobold settings-->
-                            <div id="novel_api-settings">
+                            <div id="novel_api-settings" data-tt-settings-api="novel" data-tt-settings-group="sampling">
                                 <div class="range-block flexFlowColumn">
                                     <div class="range-block-title">
                                         <span data-i18n="Samplers Order">Samplers Order</span>
@@ -1333,7 +1390,7 @@ Good for story writing, but should not be used for chat and instruct mode." data
                                     </div>
                                 </div>
                             </div><!-- end of novel settings-->
-                            <div id="textgenerationwebui_api-settings">
+                            <div id="textgenerationwebui_api-settings" data-tt-settings-api="textgenerationwebui" data-tt-settings-group="sampling">
                                 <div class="flex-container justifyCenter">
                                     <small class="flex-container alignitemscenter">
                                         <div id="samplerResetButton" class="menu_button whitespacenowrap" data-i18n="Neutralize Samplers">Neutralize Samplers</div>
@@ -1996,8 +2053,8 @@ Using a draft model is preferred. Speculative ngram is not as effective." id="sp
                                     </div>
                                 </div>
                             </div><!-- end of textgen settings-->
-                            <div id="openai_settings">
-                                <div class="">
+                            <div id="openai_settings" data-tt-settings-api="openai">
+                                <div class="" data-tt-settings-group="completion-prompts">
                                     <div class="inline-drawer wide100p flexFlowColumn">
                                         <div class="inline-drawer-toggle inline-drawer-header">
                                             <div class="flex-container alignItemsCenter">
@@ -2370,7 +2427,7 @@ Using a draft model is preferred. Speculative ngram is not as effective." id="sp
                                         </div>
                                     </div>
                                 </div>
-                                <div class="range-block m-t-1" data-source="openai,aimlapi,openrouter,custom,electronhub,azure_openai,chutes">
+                                <div class="range-block m-t-1" data-source="openai,aimlapi,openrouter,custom,electronhub,azure_openai,chutes" data-tt-settings-group="sampling">
                                     <div id="logit_bias_openai" class="range-block-title openai_restorable"><span data-i18n="Logit Bias" id="openai_logit_bias_preset_label">
                                         Logit Bias
                                     </span></div>
@@ -2410,7 +2467,7 @@ Using a draft model is preferred. Speculative ngram is not as effective." id="sp
                                         </div>
                                     </div>
                                 </div>
-                                <div class="range-block m-b-1">
+                                <div class="range-block m-b-1" data-tt-settings-group="completion-prompts">
                                     <div id="completion_prompt_manager"></div>
                                 </div>
                             </div><!-- end of OpenAI settings-->
@@ -2435,7 +2492,7 @@ Using a draft model is preferred. Speculative ngram is not as effective." id="sp
                             <option value="kobold" data-i18n="KoboldAI">KoboldAI Classic</option>
                         </select>
                     </div>
-                    <div id="kobold_horde" style="position: relative;"> <!-- shows the kobold settings -->
+                    <div id="kobold_horde" data-tt-settings-api="koboldhorde" style="position: relative;"> <!-- shows the kobold settings -->
                         <form action="javascript:void(null);" method="post" enctype="multipart/form-data">
                             <div id="kobold_horde_block">
                                 <ul>
@@ -2503,7 +2560,7 @@ Using a draft model is preferred. Speculative ngram is not as effective." id="sp
                             </div>
                         </form>
                     </div>
-                    <div id="kobold_api" style="position: relative;"> <!-- shows the kobold settings -->
+                    <div id="kobold_api" data-tt-settings-api="kobold" style="position: relative;"> <!-- shows the kobold settings -->
                         <form action="javascript:void(null);" method="post" enctype="multipart/form-data">
                             <div id="kobold_api_block">
                                 <h4><span data-i18n="API url" id="api_url_text_label">API url</span></h4>
@@ -2523,7 +2580,7 @@ Using a draft model is preferred. Speculative ngram is not as effective." id="sp
                             </div>
                         </form>
                     </div>
-                    <div id="novel_api" style="display: none;position: relative;"> <!-- shows the novel settings -->
+                    <div id="novel_api" data-tt-settings-api="novel" style="display: none;position: relative;"> <!-- shows the novel settings -->
                         <form action="javascript:void(null);" method="post" enctype="multipart/form-data">
                             <h4><span data-i18n="Novel API key" id="api_key_novel_label">Novel API key</span></h4>
                             <span>
@@ -2563,7 +2620,7 @@ Using a draft model is preferred. Speculative ngram is not as effective." id="sp
                             <div class="online_status_text" data-i18n="No connection..." role="status">No connection... </div>
                         </div>
                     </div>
-                    <div id="textgenerationwebui_api" style="display: none;position: relative;">
+                    <div id="textgenerationwebui_api" data-tt-settings-api="textgenerationwebui" style="display: none;position: relative;">
                         <form action="javascript:void(null);" method="post" enctype="multipart/form-data">
                             <div>
                                 <h4><span data-i18n="API Type" id="textgen_type_label">API Type</span></h4>
@@ -3044,7 +3101,7 @@ Using a draft model is preferred. Speculative ngram is not as effective." id="sp
                             <div class="online_status_text" data-i18n="Not connected..." role="status">Not connected...</div>
                         </div>
                     </div>
-                    <div id="openai_api" style="display: none;position: relative;">
+                    <div id="openai_api" data-tt-settings-api="openai" style="display: none;position: relative;">
                         <h4 class="margin0"><span data-i18n="Chat Completion Source" id="chat_completion_source_label">
                             Chat Completion Source
                         </span></h4>
@@ -4431,6 +4488,10 @@ Using a draft model is preferred. Speculative ngram is not as effective." id="sp
                     <label for="auto-connect-checkbox" class="checkbox_label"><input id="auto-connect-checkbox" type="checkbox" />
                         <span data-i18n="Auto-connect to Last Server">Auto-connect to Last Server</span>
                     </label>
+                    <label class="checkbox_label" for="relaxed_api_urls" title="Reduce the formatting requirements on API URLs." data-i18n="[title]Reduce the formatting requirements on API URLs">
+                        <input id="relaxed_api_urls" type="checkbox" />
+                        <small data-i18n="Relaxed API URLS">Relaxed API URLs</small>
+                    </label>
                     <a id="viewSecrets" href="javascript:void(0);" data-i18n="[missing_key_text]Missing key;[key_saved_text]Key saved" missing_key_text="❌ Missing key" key_saved_text="✔️ Key saved">
                         <span data-i18n="View hidden API keys">View hidden API keys</span>
                     </a>
@@ -5229,42 +5290,8 @@ Using a draft model is preferred. Speculative ngram is not as effective." id="sp
                 <div class="drawer-icon fa-solid fa-user-cog fa-fw closedIcon" title="User Settings" data-i18n="[title]User Settings"></div>
             </div>
             <div id="user-settings-block" class="drawer-content closedDrawer">
-                <div class="flex-container flexFlowColumn">
-                    <div name="userSettingsRowOne" class="flex-container flexFlowRow alignitemscenter spaceBetween">
-                        <div class="flex-container">
-                            <div class="flex-container flexnowrap alignItemsBaseline">
-                                <h3 class="margin0">
-                                    <span data-i18n="User Settings">User Settings</span>
-
-                                    <a href="https://docs.sillytavern.app/usage/user-settings/" class="notes-link" target="_blank">
-                                        <span class="fa-solid fa-circle-question note-link-span"></span>
-                                    </a>
-                                </h3>
-                            </div>
-                        </div>
-                        <div id="UI-language-block" class="flex-container alignItemsBaseline">
-                            <span data-i18n="UI Language">Language:</span>
-                            <select id="ui_language_select" class="flex1 margin0 text_pole">
-                                <option value="" data-i18n="Default">Default</option>
-                                <option value="en">English</option>
-                            </select>
-                        </div>
-                        <small id="version_display"></small>
-                    </div>
-                    <div name="UserSettingsRowTwo" class="flex-container flexFlowRow">
-                        <div id="tauritavern_settings" class="flex-container">
-                            <div id="tauritavern_settings_button" class="margin0 menu_button_icon menu_button" title="TauriTavern Settings" data-i18n="[title]TauriTavern Settings">
-                                <i class="fa-fw fa-solid fa-gear"></i>
-                                <div class="flex-container flexFlowColumn" style="gap: 0; align-items: flex-start;">
-                                    <span data-i18n="TauriTavern Settings">TauriTavern Settings</span>
-                                </div>
-                            </div>
-                        </div>
-                        <textarea id="settingsSearch" class="textarea_compact flex1" rows="1" placeholder="Search Settings" data-i18n="[placeholder]Search Settings"></textarea>
-                    </div>
-                </div>
                 <div id="user-settings-block-content" class="flex-container spaceEvenly">
-                    <div name="UserSettingsFirstColumn" id="UI-Theme-Block" class="flex-container flexFlowColumn wide100p flex1">
+                    <div name="UserSettingsFirstColumn" id="UI-Theme-Block" class="flex-container flexFlowColumn wide100p flex1" data-tt-settings-group="reading">
                         <div id="UI-presets-block" class="flex-container flexFlowColumn">
                             <h4 class="title_restorable">
                                 <span data-i18n="UI Theme">UI Theme</span>
@@ -5282,7 +5309,7 @@ Using a draft model is preferred. Speculative ngram is not as effective." id="sp
                                 <input type="file" id="ui_preset_import_file" accept=".json" hidden>
                             </h4>
                             <div class="flex-container flexnowrap alignitemscenter">
-                                <select id="themes" class="margin0">
+                                <select id="themes" class="margin0" aria-label="UI Theme" data-i18n="[aria-label]UI Theme">
                                 </select>
                                 <div id="ui-preset-update-button" title="Update a theme file" data-i18n="[title]Update a theme file" class="menu_button margin0">
                                     <i class="fa-solid fa-save"></i>
@@ -5412,8 +5439,8 @@ Using a draft model is preferred. Speculative ngram is not as effective." id="sp
                                         <span data-i18n="Font Scale">Font Scale</span>
                                         <div class="fa-solid fa-circle-info opacity50p" data-i18n="[title]Font size" title="Font size"></div>
                                     </small>
-                                    <input class="neo-range-slider" type="range" id="font_scale" name="font_scale" min="0.5" max="1.5" step="0.01">
-                                    <input class="neo-range-input" type="number" min="0.5" max="1.5" step="0.01" data-for="font_scale" id="font_scale_counter">
+                                    <input class="neo-range-slider" type="range" id="font_scale" name="font_scale" min="0.5" max="1.5" step="0.01" aria-label="Font Scale" data-i18n="[aria-label]Font Scale">
+                                    <input class="neo-range-input" type="number" min="0.5" max="1.5" step="0.01" data-for="font_scale" id="font_scale_counter" aria-label="Font Scale" data-i18n="[aria-label]Font Scale">
                                 </div>
 
                                 <div class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
@@ -5532,7 +5559,7 @@ Using a draft model is preferred. Speculative ngram is not as effective." id="sp
                         </div>
                     </div>
                     <div name="UserSettingsSecondColumn" id="UI-Customization" class="flex-container flexFlowColumn wide100p flexNoGap flex1">
-                        <div name="CharacterHandlingToggles">
+                        <div name="CharacterHandlingToggles" data-tt-settings-group="character-behavior">
                             <h4 data-i18n="Character Handling">
                                 Character Handling
                             </h4>
@@ -5568,10 +5595,6 @@ Using a draft model is preferred. Speculative ngram is not as effective." id="sp
                                 <input id="never_resize_avatars" type="checkbox" />
                                 <small data-i18n="Never resize avatars">Never resize avatars</small>
                             </label>
-                            <label data-i18n="[title]Allow animations for WEBP backgrounds. This is only a change for the selection menu." for="background_thumbnails_animation" class="checkbox_label" title="Allow animations for WEBP backgrounds. This is only a change for the selection menu.">
-                                <input id="background_thumbnails_animation" type="checkbox" />
-                                <small data-i18n="Animated background thumbnails">Animated background thumbnails</small>
-                            </label>
                             <label class="checkbox_label" for="show_card_avatar_urls" title="Show actual file names on the disk, in the characters list display only." data-i18n="[title]Show actual file names on the disk, in the characters list display only">
                                 <input id="show_card_avatar_urls" type="checkbox" />
                                 <small data-i18n="Show avatar filenames">Show avatar filenames</small>
@@ -5581,9 +5604,41 @@ Using a draft model is preferred. Speculative ngram is not as effective." id="sp
                                 <small data-i18n="Spoiler Free Mode">Spoiler Free Mode</small>
                             </label>
 
+                            <label class="checkbox_label" for="world_import_dialog" title="Ask to import the World Info/Lorebook for every new character with embedded lorebook. If unchecked, a brief message will be shown instead." data-i18n="[title]Ask to import the World Info/Lorebook for every new character with embedded lorebook. If unchecked, a brief message will be shown instead">
+                                <input id="world_import_dialog" type="checkbox" />
+                                <small data-i18n="Lorebook Import Dialog">Lorebook Import Dialog</small>
+                            </label>
+                            <div class="persona_management_global_settings">
+                                <h4 class="standoutHeader" data-i18n="Persona preferences">Persona preferences</h4>
+
+                                <div class="range-block">
+                                    <label for="persona_show_notifications" class="checkbox_label">
+                                        <input id="persona_show_notifications" type="checkbox" />
+                                        <span data-i18n="Show notifications on switching personas">
+                                            Show notifications on switching personas
+                                        </span>
+                                    </label>
+                                </div>
+                                <div class="range-block">
+                                    <label for="persona_allow_multi_connections" class="checkbox_label" title="When multiple personas are connected to a character, a popup will appear to select which one to use." data-i18n="[title]When multiple personas are connected to a character, a popup will appear to select which one to use">
+                                        <input id="persona_allow_multi_connections" type="checkbox" />
+                                        <span data-i18n="Allow multiple persona connections per character">
+                                            Allow multiple persona connections per character
+                                        </span>
+                                    </label>
+                                </div>
+                                <div class="range-block">
+                                    <label for="persona_auto_lock" class="checkbox_label" title="Whenever a persona is selected, it will be locked to the current chat and automatically selected when the chat is opened." data-i18n="[title]Whenever a persona is selected, it will be locked to the current chat and automatically selected when the chat is opened.">
+                                        <input id="persona_auto_lock" type="checkbox" />
+                                        <span data-i18n="Auto-lock a chosen persona to the chat">
+                                            Auto-lock a chosen persona to the chat
+                                        </span>
+                                    </label>
+                                </div>
+                            </div>
                         </div>
 
-                        <div name="MiscellaneousToggles">
+                        <div name="MiscellaneousToggles" data-tt-settings-group="messages">
                             <h4><span data-i18n="Miscellaneous">Miscellaneous</span></h4>
                             <div class="flex-container flexGap2">
                                 <div id="reload_chat" class="menu_button whitespacenowrap" data-i18n="[title]Reload and redraw the currently open chat" title="Reload and redraw the currently open chat.">
@@ -5635,14 +5690,6 @@ Using a draft model is preferred. Speculative ngram is not as effective." id="sp
                                 <input id="play_sound_unfocused" type="checkbox" />
                                 <small data-i18n="Background Sound Only">Background Sound Only</small>
                             </label>
-                            <label class="checkbox_label" for="relaxed_api_urls" title="Reduce the formatting requirements on API URLs." data-i18n="[title]Reduce the formatting requirements on API URLs">
-                                <input id="relaxed_api_urls" type="checkbox" />
-                                <small data-i18n="Relaxed API URLS">Relaxed API URLs</small>
-                            </label>
-                            <label class="checkbox_label" for="world_import_dialog" title="Ask to import the World Info/Lorebook for every new character with embedded lorebook. If unchecked, a brief message will be shown instead." data-i18n="[title]Ask to import the World Info/Lorebook for every new character with embedded lorebook. If unchecked, a brief message will be shown instead">
-                                <input id="world_import_dialog" type="checkbox" />
-                                <small data-i18n="Lorebook Import Dialog">Lorebook Import Dialog</small>
-                            </label>
                             <label class="checkbox_label" for=" enable_auto_select_input" title="Enable auto-select of input text in some text fields when clicking/selecting them. Applies to popup input textboxes, and possible other custom input fields." data-i18n="[title]Enable auto-select of input text in some text fields when clicking/selecting them. Applies to popup input textboxes, and possible other custom input fields.">
                                 <input id="enable_auto_select_input" type="checkbox" />
                                 <small data-i18n="Auto-select Input Text">Auto-select Input Text</small>
@@ -5658,46 +5705,46 @@ Using a draft model is preferred. Speculative ngram is not as effective." id="sp
                                 <input id="restore_user_input" type="checkbox" />
                                 <small data-i18n="Restore User Input">Restore User Input</small>
                             </label>
-                            <div class="flex-container alignItemsCenter">
-                                <label id="movingUIModeCheckBlock" for="movingUImode" class="checkbox_label" title="Allow repositioning certain UI elements by dragging them. PC only, no effect on mobile." data-i18n="[title]Allow repositioning certain UI elements by dragging them. PC only, no effect on mobile">
-                                    <input id="movingUImode" type="checkbox" />
-                                    <small>
-                                        <span data-i18n="Movable UI Panels">MovingUI</span>
-                                        <i class="fa-solid fa-desktop"></i>
-                                    </small>
+                        </div>
+                        <div class="flex-container alignItemsCenter" data-tt-settings-group="layout">
+                            <label id="movingUIModeCheckBlock" for="movingUImode" class="checkbox_label" title="Allow repositioning certain UI elements by dragging them. PC only, no effect on mobile." data-i18n="[title]Allow repositioning certain UI elements by dragging them. PC only, no effect on mobile">
+                                <input id="movingUImode" type="checkbox" />
+                                <small>
+                                    <span data-i18n="Movable UI Panels">MovingUI</span>
+                                    <i class="fa-solid fa-desktop"></i>
+                                </small>
+                            </label>
+                            <div id="movingUIreset" title="Reset MovingUI panel sizes/locations." class="menu_button margin0" data-i18n="[title]Reset MovingUI panel sizes/locations.">
+                                <i class=" fa-solid fa-recycle margin-r5"></i>
+                                <span data-i18n="mui_reset">Reset</span>
+                            </div>
+                        </div>
+                        <div id="MovingUI-presets-block" class="flex-container alignitemscenter" data-tt-settings-group="layout">
+                            <div class="flex-container alignItemsFlexEnd">
+                                <label for="movingUIPresets" title="MovingUI preset. Predefined/saved draggable positions." data-i18n="[title]MovingUI preset. Predefined/saved draggable positions">
+                                    <small data-i18n="MUI Preset">MovingUI Preset:</small>
+                                    <div class="flex-container flexnowrap">
+                                        <select id="movingUIPresets" class="widthNatural flex1 margin0">
+                                        </select>
+                                    </div>
                                 </label>
-                                <div id="movingUIreset" title="Reset MovingUI panel sizes/locations." class="menu_button margin0" data-i18n="[title]Reset MovingUI panel sizes/locations.">
-                                    <i class=" fa-solid fa-recycle margin-r5"></i>
-                                    <span data-i18n="mui_reset">Reset</span>
-                                </div>
+                                <div id="movingui-preset-save-button" title="Save changes to a new MovingUI preset file." data-i18n="[title]Save movingUI changes to a new file" class="menu_button margin0 fa-solid fa-save"></div>
                             </div>
-                            <div id="MovingUI-presets-block" class="flex-container alignitemscenter">
-                                <div class="flex-container alignItemsFlexEnd">
-                                    <label for="movingUIPresets" title="MovingUI preset. Predefined/saved draggable positions." data-i18n="[title]MovingUI preset. Predefined/saved draggable positions">
-                                        <small data-i18n="MUI Preset">MovingUI Preset:</small>
-                                        <div class="flex-container flexnowrap">
-                                            <select id="movingUIPresets" class="widthNatural flex1 margin0">
-                                            </select>
-                                        </div>
-                                    </label>
-                                    <div id="movingui-preset-save-button" title="Save changes to a new MovingUI preset file." data-i18n="[title]Save movingUI changes to a new file" class="menu_button margin0 fa-solid fa-save"></div>
-                                </div>
-                            </div>
-                            <div id="CustomCSS-block" class="flex-container flexFlowColumn">
-                                <h4 class="title_restorable" title="Apply a custom CSS style to all of the ST GUI." data-i18n="[title]Apply a custom CSS style to all of the ST GUI">
-                                    <span data-i18n="Custom CSS">Custom CSS</span>
-                                    <i class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="customCSS" title="Expand the editor" data-i18n="[title]Expand the editor"></i>
-                                </h4>
-                                <div id="CustomCSS-textAreaBlock" class="flex-container flexnowrap alignitemscenter">
-                                    <textarea id="customCSS" class="text_pole margin0 margin-r5 textarea_compact monospace" rows="8"></textarea>
-                                </div>
+                        </div>
+                        <div id="CustomCSS-block" class="flex-container flexFlowColumn" data-tt-settings-group="layout">
+                            <h4 class="title_restorable" title="Apply a custom CSS style to all of the ST GUI." data-i18n="[title]Apply a custom CSS style to all of the ST GUI">
+                                <span data-i18n="Custom CSS">Custom CSS</span>
+                                <i class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="customCSS" title="Expand the editor" data-i18n="[title]Expand the editor"></i>
+                            </h4>
+                            <div id="CustomCSS-textAreaBlock" class="flex-container flexnowrap alignitemscenter">
+                                <textarea id="customCSS" class="text_pole margin0 margin-r5 textarea_compact monospace" rows="8"></textarea>
                             </div>
                         </div>
                     </div>
                     <div name="UserSettingsThirdColumn" id="power-user-options-block" class="flex-container wide100p flex1">
                         <div id="power-user-option-checkboxes">
 
-                            <div name="ChatMessageHandlingToggles">
+                            <div name="ChatMessageHandlingToggles" data-tt-settings-group="messages">
                                 <h4 data-i18n="Chat/Message Handling">Chat/Message Handling</h4>
                                 <div class="flex-container">
                                     <div class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
@@ -5898,7 +5945,7 @@ Using a draft model is preferred. Speculative ngram is not as effective." id="sp
 
                                 </div>
                             </div>
-                            <div name="AutoCompleteToggle" class="inline-drawer wide100p flexFlowColumn">
+                            <div name="AutoCompleteToggle" class="inline-drawer wide100p flexFlowColumn" data-tt-settings-group="messages">
                                 <div class="inline-drawer-toggle inline-drawer-header userSettingsInnerExpandable" title="Options for the various autocomplete input boxes.">
                                     <b><span data-i18n="AutoComplete Settings">AutoComplete Settings</span></b>
                                     <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
@@ -5991,7 +6038,7 @@ Using a draft model is preferred. Speculative ngram is not as effective." id="sp
                                     </div>
                                 </div>
                             </div>
-                            <div name="STscriptToggles">
+                            <div name="STscriptToggles" data-tt-settings-group="scripting">
                                 <h4 data-i18n="STscript Settings">STscript Settings</h4>
                                 <div title="Sets default flags for the STscript parser." data-i18n="[title]Sets default flags for the STscript parser.">
                                     <label><small data-i18n="Parser Flags">Parser Flags</small></label>
@@ -6061,13 +6108,17 @@ Using a draft model is preferred. Speculative ngram is not as effective." id="sp
                         </select>
                     </div>
                 </div>
+                <label data-i18n="[title]Allow animations for WEBP backgrounds. This is only a change for the selection menu." for="background_thumbnails_animation" class="checkbox_label" title="Allow animations for WEBP backgrounds. This is only a change for the selection menu.">
+                    <input id="background_thumbnails_animation" type="checkbox" />
+                    <small data-i18n="Animated background thumbnails">Animated background thumbnails</small>
+                </label>
                 <div id="bg_tabs" class="heading-container-with-controls">
                     <ul class="bg_tabs_list">
                         <li class="bg_tab_button">
-                            <a href="#bg_global_tab" data-i18n="Global">Global</a>
+                            <a href="#bg_global_tab" data-i18n="This app’s default wallpaper">This app’s default wallpaper</a>
                         </li>
                         <li class="bg_tab_button">
-                            <a href="#bg_chat_tab" data-i18n="Chat">Chat</a>
+                            <a href="#bg_chat_tab" data-i18n="Wallpapers for this chat">Wallpapers for this chat</a>
                         </li>
                         <div class="heading-controls">
                             <button id="bg_group_add_to_folder_button" class="menu_button menu_button_icon" style="display:none;" data-i18n="[title]Add selected backgrounds to folder" title="Add selected backgrounds to folder">
@@ -6140,6 +6191,10 @@ Using a draft model is preferred. Speculative ngram is not as effective." id="sp
                                 <i class="fa-solid fa-cloud-arrow-down" aria-hidden="true"></i>
                                 <span data-i18n="Install extension">Install extension</span>
                             </div>
+                            <button id="tt-settings-extension-shortcuts" class="menu_button menu_button_icon" type="button">
+                                <i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i>
+                                <span data-i18n="Manage Quick Access">Manage Quick Access</span>
+                            </button>
                         </div>
                     </div>
                     <div id="extensions_settings" class="flex1 wide50p">
@@ -6176,8 +6231,6 @@ Using a draft model is preferred. Speculative ngram is not as effective." id="sp
                         <div id="chromadb_container" class="extension_container"></div>
                         <div id="message_limit_container" class="extension_container"></div>
                         <div id="code_render_container" class="extension_container"></div>
-                        <div id="data_migration_container" class="extension_container"></div>
-                        <div id="tauritavern_version_container" class="extension_container"></div>
                         <div id="injects_container" class="extension_container"></div>
                         <div id="accuweather_container" class="extension_container"></div>
                         <div id="dice_container" class="extension_container"></div>
@@ -6341,34 +6394,6 @@ Using a draft model is preferred. Speculative ngram is not as effective." id="sp
                                 </div>
                             </div>
 
-                            <div class="persona_management_global_settings">
-                                <h4 class="standoutHeader" data-i18n="Global Settings">Global Settings</h4>
-
-                                <div class="range-block">
-                                    <label for="persona_show_notifications" class="checkbox_label">
-                                        <input id="persona_show_notifications" type="checkbox" />
-                                        <span data-i18n="Show notifications on switching personas">
-                                            Show notifications on switching personas
-                                        </span>
-                                    </label>
-                                </div>
-                                <div class="range-block">
-                                    <label for="persona_allow_multi_connections" class="checkbox_label" title="When multiple personas are connected to a character, a popup will appear to select which one to use." data-i18n="[title]When multiple personas are connected to a character, a popup will appear to select which one to use">
-                                        <input id="persona_allow_multi_connections" type="checkbox" />
-                                        <span data-i18n="Allow multiple persona connections per character">
-                                            Allow multiple persona connections per character
-                                        </span>
-                                    </label>
-                                </div>
-                                <div class="range-block">
-                                    <label for="persona_auto_lock" class="checkbox_label" title="Whenever a persona is selected, it will be locked to the current chat and automatically selected when the chat is opened." data-i18n="[title]Whenever a persona is selected, it will be locked to the current chat and automatically selected when the chat is opened.">
-                                        <input id="persona_auto_lock" type="checkbox" />
-                                        <span data-i18n="Auto-lock a chosen persona to the chat">
-                                            Auto-lock a chosen persona to the chat
-                                        </span>
-                                    </label>
-                                </div>
-                            </div>
                         </div>
                     </div>
                 </div>

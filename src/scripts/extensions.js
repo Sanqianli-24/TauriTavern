@@ -631,6 +631,10 @@ export function getExtensionManifest(name) {
     return manifest ? structuredClone(manifest) : null;
 }
 
+export function getActiveExtensionNames() {
+    return [...activeExtensions];
+}
+
 /**
  * Loads manifest.json files for extensions.
  * @param {string[]} names Array of extension names

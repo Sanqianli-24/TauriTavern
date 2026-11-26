@@ -378,7 +378,7 @@ import {
     setMobileImmersiveFullscreenEnabled,
 } from './scripts/mobile-system-ui.js';
 import { initServerHistory } from './scripts/server-history.js';
-import { initSettingsSearch } from './scripts/setting-search.js';
+import { handleSettingsDrawerToggle } from './scripts/tavern-settings.js';
 import { initBulkEdit } from './scripts/bulk-edit.js';
 import { getContext } from './scripts/st-context.js';
 import { extractReasoningFromData, extractReasoningSignatureFromData, initReasoning, parseReasoningInSwipes, PromptReasoning, ReasoningHandler, removeReasoningFromString, updateReasoningUI } from './scripts/reasoning.js';
@@ -1246,7 +1246,6 @@ async function firstLoadInit() {
         initLogprobs();
         initInputMarkdown();
         initServerHistory();
-        initSettingsSearch();
         initBulkEdit();
         initReasoning();
         initWelcomeScreen();
@@ -12790,6 +12789,7 @@ function doDrawerOpenClick() {
 export async function doNavbarIconClick() {
     const panel = getTopLevelDrawerPanel($(this).get(0));
     if (!panel) return;
+    if (handleSettingsDrawerToggle(panel, document.activeElement)) return;
     const drawerWasOpenAlready = isTopLevelDrawerOpen(panel);
 
     if (!drawerWasOpenAlready) {
@@ -13840,6 +13840,7 @@ jQuery(async function () {
             '.text_pole',
             '#toast-container',
             '.select2-results',
+            '#tt-settings-center',
             '[data-tt-workspace-action]',
         ];
 

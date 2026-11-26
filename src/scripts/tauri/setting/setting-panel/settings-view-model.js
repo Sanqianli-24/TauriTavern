@@ -16,12 +16,12 @@ export function resolveTauriTavernSettingsCapabilities() {
 
     return {
         requestProxyAllowed: iosCaps?.network?.request_proxy !== false,
-        lanSyncAllowed: iosCaps?.sync?.lan !== false,
         supportsCloseToTrayOnClose: hostPlatform() === 'windows',
         supportsDataRootSelection,
     };
 }
 
+/** @param {{ original_bytes?: unknown, stored_bytes?: unknown } | null} stats */
 function normalizeChatBackupStorageStats(stats) {
     if (stats === null) {
         return null;

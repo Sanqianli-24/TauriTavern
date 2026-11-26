@@ -548,12 +548,11 @@ function createSyncActions(client) {
     };
 }
 
-export async function openSyncPopup() {
+export async function mountSyncPanel(mount) {
     ensureSyncStyle();
 
     const bundle = await importSyncBundle();
     const client = createSyncClient();
-    const mount = document.createElement('div');
     const appHandle = bundle.mountTauriTavernSyncApp(mount, {
         client,
         actions: createSyncActions(client),
@@ -574,6 +573,18 @@ export async function openSyncPopup() {
     window.addEventListener(SYNC_AUTOMATION_CHANGED_EVENT, refresh);
     window.addEventListener(SYNC_AUTOMATION_STATUS_CHANGED_EVENT, refreshAutomationStatus);
 
+    return () => {
+        window.removeEventListener(LAN_SYNC_DEVICES_CHANGED_EVENT, refresh);
+        window.removeEventListener(TT_SYNC_SERVERS_CHANGED_EVENT, refresh);
+        window.removeEventListener(SYNC_AUTOMATION_CHANGED_EVENT, refresh);
+        window.removeEventListener(SYNC_AUTOMATION_STATUS_CHANGED_EVENT, refreshAutomationStatus);
+        appHandle.unmount();
+    };
+}
+
+export async function openSyncPopup() {
+    const mount = document.createElement('div');
+    const dispose = await mountSyncPanel(mount);
     try {
         await callTauriTavernPanelPopup(mount, POPUP_TYPE.TEXT, '', {
             okButton: translate('Close'),
@@ -582,10 +593,6 @@ export async function openSyncPopup() {
             large: false,
         });
     } finally {
-        window.removeEventListener(LAN_SYNC_DEVICES_CHANGED_EVENT, refresh);
-        window.removeEventListener(TT_SYNC_SERVERS_CHANGED_EVENT, refresh);
-        window.removeEventListener(SYNC_AUTOMATION_CHANGED_EVENT, refresh);
-        window.removeEventListener(SYNC_AUTOMATION_STATUS_CHANGED_EVENT, refreshAutomationStatus);
-        appHandle.unmount();
+        dispose();
     }
 }

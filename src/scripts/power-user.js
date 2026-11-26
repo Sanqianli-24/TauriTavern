@@ -381,6 +381,10 @@ export const power_user = {
 };
 
 let themes = [];
+
+export function getThemeNames() {
+    return themes.map(theme => theme.name);
+}
 let movingUIPresets = [];
 /** @type {ContextSettings[]} */
 export let context_presets = [];

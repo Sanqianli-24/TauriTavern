@@ -18,7 +18,7 @@
 
 ### 2.1 前端设置面板
 
-- 位置：`src/scripts/tauri/setting/setting-panel/settings-popup.js`
+- 位置为 `src/scripts/tauri/setting/setting-panel/settings-session.js`，入口在「设置 → 数据与同步 → 聊天备份与存储」。
 - 仅桌面宿主显示 `System -> Data Directory`（折叠区块），与后端只在 `cfg(desktop)` 下注册相关命令同源
 - 通过 `src/tauri-bridge.js` 的 `openDialog(...)` 调用 `plugin:dialog|open` 打开系统目录选择器（避免裸模块导入）
 - 选择后调用后端命令：
@@ -123,5 +123,5 @@
 
 - `src-tauri/crates/tauritavern/src/infrastructure/paths.rs`
 - `src-tauri/crates/tauritavern/src/presentation/commands/runtime_paths_commands.rs`
-- `src/scripts/tauri/setting/setting-panel/settings-popup.js`
+- `src/scripts/tauri/setting/setting-panel/settings-session.js`
 - `src/tauri-bridge.js`
