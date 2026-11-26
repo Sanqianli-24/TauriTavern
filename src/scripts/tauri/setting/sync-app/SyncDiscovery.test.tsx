@@ -85,7 +85,7 @@ test.each(['nearby', 'link'])('a rejected %s pairing still refreshes the started
         await user.click(view.getByRole('button', { name: 'Pair Laptop' }));
     } else {
         const { pairUri } = await fakes.client.getLanPairingInfo();
-        await user.click(view.getByText('QR code or pairing link'));
+        await user.click(view.getByText('Device QR code or pairing link'));
         fireEvent.change(view.getByPlaceholderText('Paste Pair URI here'), { target: { value: pairUri } });
         await user.click(view.getByRole('button', { name: 'Connect' }));
         expect(view.getByPlaceholderText<HTMLTextAreaElement>('Paste Pair URI here').value).toBe(pairUri);

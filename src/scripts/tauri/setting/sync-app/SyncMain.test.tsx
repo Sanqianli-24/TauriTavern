@@ -2,6 +2,7 @@ import { act, fireEvent, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { expect, test } from '@rstest/core';
 
+import type { CloudSyncController } from './CloudAccountCard';
 import { mountTauriTavernSyncApp } from './SyncApp';
 import { createFakes, handles, mountMain, tr } from './SyncMainTestHarness';
 
@@ -292,7 +293,7 @@ test('sync main shows the optional QR link without changing server state', async
     const view = within(container);
     const user = userEvent.setup();
 
-    await user.click(view.getByText('QR code or pairing link'));
+    await user.click(view.getByText('Device QR code or pairing link'));
     await user.click(view.getByRole('button', { name: 'Show QR code' }));
 
     await waitFor(() => expect(container.querySelector('.tt-sync-qr-wrap img')).toBeTruthy());
@@ -301,6 +302,91 @@ test('sync main shows the optional QR link without changing server state', async
     expect(view.getByText('Running')).toBeTruthy();
     expect(view.getByRole('button', { name: 'Refresh QR code' })).toBeTruthy();
     expect(view.getByRole('button', { name: 'Copy URI' })).toBeTruthy();
+});
+
+const SAMPLE_RECOVERY_CODE = `tt-cloud-v1-${'A'.repeat(43)}`;
+
+function fakeCloudAccount(account: string | null = null) {
+    const setupRequests: string[] = [];
+    const snapshot: ReturnType<CloudSyncController['getSnapshot']> = {
+        status: { account, device: null, lastSyncedMs: null, pendingApply: false, pendingUpload: false, conflicts: [] },
+        busy: false,
+        dirty: false,
+        error: '',
+        storageIssues: [],
+    };
+    const cloud: CloudSyncController = {
+        getSnapshot: () => snapshot,
+        subscribe: () => () => {},
+        preview: () => {
+            setupRequests.push('preview');
+            return Promise.resolve({ localFiles: 0, localBytes: 0, cloudItems: 0, cloudBytes: 0 });
+        },
+        connect: () => {
+            setupRequests.push('connect');
+            return Promise.resolve({ recoveryCode: '' });
+        },
+        disconnect: () => Promise.resolve(),
+        recovery: () => Promise.resolve({ recoveryCode: SAMPLE_RECOVERY_CODE, qrSvg: '' }),
+        sync: () => Promise.resolve(),
+    };
+    return { cloud, setupRequests };
+}
+
+test.each(['text', 'scan'])('sync main opens cloud setup for a recovery code received via %s', async input => {
+    const fakes = createFakes();
+    const { cloud, setupRequests } = fakeCloudAccount();
+    fakes.actions.scanPairUri = () => Promise.resolve(SAMPLE_RECOVERY_CODE);
+    fakes.actions.connectPairUri = () => {
+        fakes.events.push('connectPairUri');
+        return Promise.resolve(true);
+    };
+    const { container } = await mountMain(fakes, { cloud, canScanPairUri: true });
+    const view = within(container);
+    const user = userEvent.setup();
+
+    await user.click(view.getByText('Device QR code or pairing link'));
+    const pairingInput = view.getByPlaceholderText<HTMLTextAreaElement>('Paste Pair URI here');
+    if (input === 'text') {
+        fireEvent.change(pairingInput, { target: { value: ` ${SAMPLE_RECOVERY_CODE}\n` } });
+        await user.click(view.getByRole('button', { name: 'Connect' }));
+    } else {
+        await user.click(view.getByRole('button', { name: 'Scan' }));
+    }
+
+    const region = view.getByRole('region', { name: 'Cloud account' });
+    const account = within(region);
+    const recovery = account.getByLabelText<HTMLInputElement>('Cloud recovery code');
+    expect(recovery.closest('details')?.open).toBe(true);
+    expect(recovery.type).toBe('password');
+    expect(recovery.value).toBe(SAMPLE_RECOVERY_CODE);
+    expect(account.getByRole<HTMLSelectElement>('combobox', { name: 'First sync' }).value).toBe('merge');
+    expect(document.activeElement).toBe(region);
+    expect(pairingInput.value).toBe('');
+    expect(fakes.events).not.toContain('connectPairUri');
+    expect(fakes.errors).toEqual([]);
+    expect(setupRequests).toEqual([]);
+});
+
+test('sync main directs users to the other device when the cloud account is already connected', async () => {
+    const fakes = createFakes();
+    const { cloud, setupRequests } = fakeCloudAccount('user@example.invalid');
+    const { container } = await mountMain(fakes, { cloud });
+    const view = within(container);
+    const user = userEvent.setup();
+
+    await user.click(view.getByText('Device QR code or pairing link'));
+    const pairingInput = view.getByPlaceholderText<HTMLTextAreaElement>('Paste Pair URI here');
+    fireEvent.change(pairingInput, { target: { value: SAMPLE_RECOVERY_CODE } });
+    await user.click(view.getByRole('button', { name: 'Connect' }));
+
+    const account = within(view.getByRole('region', { name: 'Cloud account' }));
+    expect(account.getByText('This device is already connected. Enter the recovery code in Cloud account on your other device.')).toBeTruthy();
+    expect(account.getByText('user@example.invalid')).toBeTruthy();
+    expect(account.queryByLabelText('Cloud recovery code')).toBeNull();
+    expect(pairingInput.value).toBe('');
+    expect(fakes.errors).toEqual([]);
+    expect(setupRequests).toEqual([]);
 });
 
 test('sync main routes pull/push with operation options and report feedback order', async () => {

@@ -177,6 +177,10 @@ export type SyncMainHandle = {
     unmount: () => void;
 };
 
+export function isCloudRecoveryCode(value: string): boolean {
+    return value.startsWith('tt-cloud-v1-');
+}
+
 // ── Boundary validation ────────────────────────────────────────────────────
 
 const REQUIRED_CLIENT_METHODS = [

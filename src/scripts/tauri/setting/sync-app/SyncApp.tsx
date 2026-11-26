@@ -1,6 +1,6 @@
-import { StrictMode, useState, useSyncExternalStore } from 'react';
+import { StrictMode, useRef, useState, useSyncExternalStore } from 'react';
 import { createRoot } from 'react-dom/client';
-import { CloudAccountCard, type CloudSyncController } from './CloudAccountCard';
+import { CloudAccountCard, type CloudAccountCardHandle, type CloudSyncController } from './CloudAccountCard';
 
 import {
     automationTargetValue,
@@ -37,8 +37,16 @@ function SyncMainView({ controller, canScanPairUri, tr, cloud, accountActions }:
     const state = useSyncExternalStore(controller.subscribe, controller.getSnapshot);
     const [showAllDevices, setShowAllDevices] = useState(false);
     const [pairingOpen, setPairingOpen] = useState(false);
+    const cloudAccount = useRef<CloudAccountCardHandle>(null);
     const { status } = state;
     const config = { ...state.automationConfig, ...state.automationDraft };
+
+    function receiveRecoveryCode(code: string) {
+        if (!cloudAccount.current) {
+            throw new Error(tr('Use the recovery code in Cloud account on your Android device.'));
+        }
+        cloudAccount.current.receiveRecoveryCode(code);
+    }
 
     const running = Boolean(status?.running);
     const isBusy = state.loading || state.busy !== '';
@@ -98,7 +106,7 @@ function SyncMainView({ controller, canScanPairUri, tr, cloud, accountActions }:
                 />
             </header>
 
-            {cloud && <CloudAccountCard controller={cloud} tr={tr} {...accountActions} />}
+            {cloud && <CloudAccountCard ref={cloudAccount} controller={cloud} tr={tr} {...accountActions} />}
 
             <SyncOverview
                 status={status}
@@ -196,7 +204,7 @@ function SyncMainView({ controller, canScanPairUri, tr, cloud, accountActions }:
                 onToggle={event => setPairingOpen(event.currentTarget.open)}
             >
                 <summary>
-                    <b className="tt-sync-fold-title">{tr('QR code or pairing link')}</b>
+                    <b className="tt-sync-fold-title">{tr('Device QR code or pairing link')}</b>
                     <i className="fa-solid fa-chevron-down tt-sync-fold-chevron" aria-hidden="true"></i>
                 </summary>
                 <div className="tt-sync-fold-body">
@@ -264,14 +272,14 @@ function SyncMainView({ controller, canScanPairUri, tr, cloud, accountActions }:
                                     label={tr('Scan')}
                                     icon="fa-camera"
                                     disabled={isBusy}
-                                    onClick={() => void controller.scanPairing()}
+                                    onClick={() => void controller.connectPairing('scan', receiveRecoveryCode)}
                                 />
                             )}
                             <SyncButton
                                 label={tr('Connect')}
                                 icon="fa-link"
                                 disabled={isBusy}
-                                onClick={() => void controller.connectPairing()}
+                                onClick={() => void controller.connectPairing('text', receiveRecoveryCode)}
                             />
                         </div>
                     </div>

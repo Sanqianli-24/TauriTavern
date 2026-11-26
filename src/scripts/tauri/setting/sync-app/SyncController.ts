@@ -1,4 +1,5 @@
 import {
+    isCloudRecoveryCode,
     parseAutomationTargetValue,
     type SyncActions,
     type SyncAutomationConfig,
@@ -19,6 +20,8 @@ import {
     type SyncTtSyncServer,
 } from './SyncContract';
 import { createSyncDiscovery, type SyncDiscoveryState } from './SyncDiscovery';
+
+type PairingInput = 'text' | 'scan';
 
 /** Panel state shared by the React view and the mount's refresh handles. */
 
@@ -59,8 +62,7 @@ export type SyncController = {
     showPairingInfo: () => Promise<void>;
     pairNearbyDevice: (device: SyncNearbyDevice) => Promise<void>;
     copyPairUri: () => Promise<void>;
-    scanPairing: () => Promise<void>;
-    connectPairing: () => Promise<void>;
+    connectPairing: (input: PairingInput, receiveRecovery: (code: string) => void) => Promise<void>;
     connectLanAddress: () => Promise<void>;
     renameLocalDevice: () => Promise<void>;
     setRequestPairUri: (value: string) => void;
@@ -350,28 +352,34 @@ export function createSyncController({
         });
     }
 
-    async function connectPairing(): Promise<void> {
+    async function connectPairing(input: PairingInput, receiveRecovery: (code: string) => void): Promise<void> {
         await withBusy('connect', async () => {
-            const value = state.requestPairUri.trim();
+            const raw = input === 'scan' ? await actions.scanPairUri() : state.requestPairUri;
+            if (raw === null) {
+                return;
+            }
+            const value = raw.trim();
             if (!value) {
                 throw new Error(tr('Pair URI is empty'));
             }
-            if (!await actions.connectPairUri(value)) {
-                return;
-            }
-            setState({ requestPairUri: '' });
-        });
-        await refresh();
-    }
 
-    async function scanPairing(): Promise<void> {
-        await withBusy('scan', async () => {
-            const pairUri = await actions.scanPairUri();
-            if (pairUri === null) {
+            if (isCloudRecoveryCode(value)) {
+                if (input === 'text') {
+                    setState({ requestPairUri: '' });
+                }
+                receiveRecovery(value);
                 return;
             }
-            setState({ requestPairUri: pairUri });
-            await connectPairing();
+            if (input === 'scan') {
+                setState({ requestPairUri: raw });
+            }
+            try {
+                if (await actions.connectPairUri(value)) {
+                    setState({ requestPairUri: '' });
+                }
+            } finally {
+                await refresh();
+            }
         });
     }
 
@@ -456,7 +464,6 @@ export function createSyncController({
         showPairingInfo,
         pairNearbyDevice,
         copyPairUri,
-        scanPairing,
         connectPairing,
         connectLanAddress: () => withBusy('manual-connect', async () => {
             await actions.connectLanAddress();

@@ -1,5 +1,5 @@
-import { useState, useSyncExternalStore, type FormEvent } from 'react';
-import { type SyncTranslate } from './SyncContract';
+import { useImperativeHandle, useRef, useState, useSyncExternalStore, type FormEvent, type Ref } from 'react';
+import { isCloudRecoveryCode, type SyncTranslate } from './SyncContract';
 import { SyncButton } from './SyncComponents';
 
 type Mode = 'create' | 'merge' | 'restore';
@@ -40,7 +40,12 @@ export type CloudSyncController = {
     sync: (options: { manual: boolean; selection?: { item: string; version: string; observedVersions: string[] } }) => Promise<void>;
 };
 
+export type CloudAccountCardHandle = {
+    receiveRecoveryCode: (code: string) => void;
+};
+
 type Props = {
+    ref: Ref<CloudAccountCardHandle>;
     controller: CloudSyncController;
     tr: SyncTranslate;
     scan: (() => Promise<string | null>) | undefined;
@@ -52,11 +57,14 @@ const defaults: Credentials = {
     recoveryCode: '', includeCredentials: false,
 };
 
-export function CloudAccountCard({ controller, tr, scan, copy }: Props) {
+export function CloudAccountCard({ ref, controller, tr, scan, copy }: Props) {
     const snapshot = useSyncExternalStore(controller.subscribe, controller.getSnapshot);
+    const section = useRef<HTMLElement>(null);
+    const [setupOpen, setSetupOpen] = useState(false);
     const [form, setForm] = useState(defaults);
     const [preview, setPreview] = useState<Preview | null>(null);
     const [recovery, setRecovery] = useState<Recovery | null>(null);
+    const [recoveryNotice, setRecoveryNotice] = useState('');
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState('');
     const [disconnecting, setDisconnecting] = useState(false);
@@ -67,7 +75,26 @@ export function CloudAccountCard({ controller, tr, scan, copy }: Props) {
     function edit(input: Partial<Credentials>) {
         setForm(previous => ({ ...previous, ...input }));
         setPreview(null);
+        setRecoveryNotice('');
     }
+
+    function receiveRecoveryCode(code: string) {
+        if (status?.account) {
+            setRecoveryNotice('This device is already connected. Enter the recovery code in Cloud account on your other device.');
+        } else {
+            if (busy) {
+                throw new Error(tr('Checking cloud account…'));
+            }
+            edit({ mode: form.mode === 'create' ? 'merge' : form.mode, recoveryCode: code });
+            setSetupOpen(true);
+            setError('');
+            setRecoveryNotice('Recovery code filled in. Check the account and app password, then preview the first sync.');
+        }
+        section.current?.focus({ preventScroll: true });
+        section.current?.scrollIntoView({ block: 'start' });
+    }
+
+    useImperativeHandle(ref, () => ({ receiveRecoveryCode }));
 
     async function perform(action: () => Promise<void>) {
         setBusy(true);
@@ -94,6 +121,7 @@ export function CloudAccountCard({ controller, tr, scan, copy }: Props) {
             const result = await controller.connect(form);
             setForm(defaults);
             setPreview(null);
+            setRecoveryNotice('');
             if (result.recoveryCode) {
                 setRecovery({ recoveryCode: result.recoveryCode, qrSvg: '' });
                 setRecovery(await controller.recovery());
@@ -116,7 +144,7 @@ export function CloudAccountCard({ controller, tr, scan, copy }: Props) {
                     : status?.lastSyncedMs ? 'Cloud sync up to date' : 'Connected';
 
     return (
-        <section className="tt-sync-section tt-cloud-sync">
+        <section ref={section} tabIndex={-1} aria-label={tr('Cloud account')} className="tt-sync-section tt-cloud-sync">
             <div className="tt-sync-section-header">
                 <b>{tr('Cloud account')}</b>
                 {status?.account && (
@@ -128,6 +156,7 @@ export function CloudAccountCard({ controller, tr, scan, copy }: Props) {
                     />
                 )}
             </div>
+            {recoveryNotice && <div role="status" className="tt-sync-muted">{tr(recoveryNotice)}</div>}
             {(error || snapshot.error) && <div role="alert" className="tt-sync-auto-warning">{tr(error || snapshot.error)}</div>}
             {status?.account ? (
                 <>
@@ -162,6 +191,7 @@ export function CloudAccountCard({ controller, tr, scan, copy }: Props) {
                                 void perform(async () => {
                                     await controller.disconnect();
                                     setRecovery(null);
+                                    setRecoveryNotice('');
                                     setDisconnecting(false);
                                 });
                             }} />
@@ -169,7 +199,7 @@ export function CloudAccountCard({ controller, tr, scan, copy }: Props) {
                     )}
                     {recovery && (
                         <div className="tt-cloud-sync-form">
-                            <small>{tr('Save this recovery code. Any device with the code and drive access can decrypt your data.')}</small>
+                            <small>{tr('Save this code and enter it in Cloud account on your other device. Any device with the code and drive access can decrypt your data.')}</small>
                             <code className="tt-cloud-recovery-code">{recovery.recoveryCode}</code>
                             {recovery.qrSvg && (
                                 <img
@@ -218,7 +248,7 @@ export function CloudAccountCard({ controller, tr, scan, copy }: Props) {
                     )}
                 </>
             ) : (
-                <details>
+                <details open={setupOpen} onToggle={event => setSetupOpen(event.currentTarget.open)}>
                     <summary>{tr('Connect Nutstore or WebDAV')}</summary>
                     <form className="tt-cloud-sync-form" onSubmit={submit}>
                         <label>
@@ -249,8 +279,12 @@ export function CloudAccountCard({ controller, tr, scan, copy }: Props) {
                                 </label>
                                 {scan && <SyncButton label={tr('Scan recovery QR code')} icon="fa-qrcode" disabled={busy}
                                     onClick={() => void perform(async () => {
-                                        const code = await scan();
-                                        if (code) edit({ recoveryCode: code });
+                                        const code = (await scan())?.trim();
+                                        if (!code) return;
+                                        if (!isCloudRecoveryCode(code)) {
+                                            throw new Error(tr('Scan the recovery QR code shown in Cloud account on a connected device.'));
+                                        }
+                                        receiveRecoveryCode(code);
                                     })} />}
                             </>
                         )}
