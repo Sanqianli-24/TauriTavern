@@ -1,3 +1,5 @@
+#[cfg(any(test, all(android_local, target_arch = "aarch64")))]
+pub(crate) mod android_update;
 #[cfg(target_os = "android")]
 pub(crate) mod cloud_credentials;
 pub mod file_transfer;

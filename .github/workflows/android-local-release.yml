@@ -100,13 +100,15 @@ jobs:
           grep -F "package: name='com.tauritavern.client.local'" <<< "$badging"
           grep -F "versionName='${GITHUB_REF_NAME#v}'" <<< "$badging"
           grep -F "native-code: 'arm64-v8a'" <<< "$badging"
+          grep -Fx "application-label:'NexusTavern'" <<< "$badging"
+          grep -Fx "uses-permission: name='android.permission.REQUEST_INSTALL_PACKAGES'" <<< "$badging"
           signing=$("$build_tools/apksigner" verify --print-certs "$apk")
           actual=$(sed -n 's/^Signer #1 certificate SHA-256 digest: //p' <<< "$signing")
           [[ "$actual" == "${ANDROID_SIGNER_SHA256,,}" ]] || {
             echo 'APK signing certificate differs from the installed local edition' >&2
             exit 1
           }
-          cp "$apk" "$RUNNER_TEMP/TauriTavern-${GITHUB_REF_NAME#v}-local-arm64.apk"
+          cp "$apk" "$RUNNER_TEMP/NexusTavern-${GITHUB_REF_NAME#v}-android-arm64.apk"
 
       - name: Publish the update
         env:
@@ -114,7 +116,8 @@ jobs:
           GH_REPO: ${{ github.repository }}
         run: |
           set -euo pipefail
-          apk="$RUNNER_TEMP/TauriTavern-${GITHUB_REF_NAME#v}-local-arm64.apk"
+          apk="$RUNNER_TEMP/NexusTavern-${GITHUB_REF_NAME#v}-android-arm64.apk"
+          title="NexusTavern $GITHUB_REF_NAME"
           releases=$(gh release list --limit 100 --json tagName,isLatest,isDraft)
           latest=$(jq -r '.[] | select(.isLatest) | .tagName' <<< "$releases")
           newest=$(printf '%s\n' "$latest" "$GITHUB_REF_NAME" | sort -V | tail -n 1)
@@ -127,7 +130,7 @@ jobs:
           case "$state" in
             draft)
               gh release upload "$GITHUB_REF_NAME" "$apk" --clobber
-              gh release edit "$GITHUB_REF_NAME" --draft=false --latest
+              gh release edit "$GITHUB_REF_NAME" --title "$title" --draft=false --latest
               ;;
             published)
               [[ "$latest" == "$GITHUB_REF_NAME" ]]
@@ -135,6 +138,6 @@ jobs:
                 jq -e --arg apk "$(basename "$apk")" 'any(.assets[]; .name == $apk)' > /dev/null
               ;;
             "")
-              gh release create "$GITHUB_REF_NAME" "$apk" --verify-tag --generate-notes --latest
+              gh release create "$GITHUB_REF_NAME" "$apk" --title "$title" --verify-tag --generate-notes --latest
               ;;
           esac

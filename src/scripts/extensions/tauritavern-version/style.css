@@ -272,6 +272,11 @@
     font-size: 0.95rem;
 }
 
+.ttv-update-popup progress {
+    width: 100%;
+    accent-color: var(--SmartThemeQuoteColor);
+}
+
 .ttv-update-popup-body {
     overflow: auto;
     padding: 10px 12px;

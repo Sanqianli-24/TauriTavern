@@ -7,6 +7,14 @@ pub enum UpdateChannel {
     Canary,
 }
 
+#[derive(Debug, Clone, Deserialize)]
+pub struct ReleaseAsset {
+    pub name: String,
+    pub size: u64,
+    pub download_url: String,
+    pub digest: Option<String>,
+}
+
 /// GitHub Release 中与更新相关的核心字段。
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ReleaseInfo {
@@ -26,6 +34,9 @@ pub struct ReleaseInfo {
     pub prerelease: bool,
     /// 发布时间（ISO 8601）。
     pub published_at: String,
+    /// 下载元数据由宿主使用，前端只接收宿主支持的更新动作。
+    #[serde(default, skip_serializing)]
+    pub assets: Vec<ReleaseAsset>,
 }
 
 /// 更新检查结果。

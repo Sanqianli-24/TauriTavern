@@ -113,6 +113,13 @@ export async function checkForUpdate(channel) {
     return invokeWithHostNormalization('check_for_update', { channel });
 }
 
+export async function installAndroidUpdate(releaseToken, onProgress) {
+    return invokeWithHostNormalization('install_android_update', {
+        releaseToken,
+        progress: createChannel(onProgress),
+    });
+}
+
 export async function getTauriTavernSettings() {
     return invoke('get_tauritavern_settings');
 }

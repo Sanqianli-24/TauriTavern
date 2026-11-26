@@ -17,7 +17,7 @@ val tauriProperties = Properties().apply {
 }
 
 val localAppName = if (providers.environmentVariable("TAURITAVERN_UPDATE_REPOSITORY").isPresent) {
-    "TauriTavern 本地版"
+    "NexusTavern"
 } else {
     null
 }
@@ -37,6 +37,12 @@ android {
         targetSdk = 36
         versionCode = tauriProperties.getProperty("tauri.android.versionCode", "1").toInt()
         versionName = tauriProperties.getProperty("tauri.android.versionName", "1.0")
+    }
+    if (localAppName != null) {
+        sourceSets {
+            getByName("debug").manifest.srcFile("src/local/AndroidManifest.xml")
+            getByName("release").manifest.srcFile("src/local/AndroidManifest.xml")
+        }
     }
     signingConfigs {
         create("release") {

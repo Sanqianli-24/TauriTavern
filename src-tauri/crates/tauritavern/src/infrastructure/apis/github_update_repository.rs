@@ -6,7 +6,7 @@ use std::sync::Arc;
 use tt_adapter_http::github::classify_github_rate_limit;
 use tt_adapter_http::{HttpClientPool, HttpClientProfile};
 use tt_domain::errors::DomainError;
-use tt_domain::models::update::{ReleaseInfo, UpdateChannel};
+use tt_domain::models::update::{ReleaseAsset, ReleaseInfo, UpdateChannel};
 use tt_ports::repositories::update_repository::UpdateRepository;
 
 const GITHUB_REPOSITORY_API: &str = concat!(
@@ -22,6 +22,17 @@ struct GitHubRelease {
     html_url: String,
     prerelease: bool,
     published_at: Option<String>,
+    #[serde(default)]
+    assets: Vec<GitHubReleaseAsset>,
+}
+
+#[derive(Debug, Deserialize)]
+struct GitHubReleaseAsset {
+    name: String,
+    state: String,
+    size: u64,
+    browser_download_url: String,
+    digest: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -117,6 +128,17 @@ impl UpdateRepository for GitHubUpdateRepository {
             html_url: response.html_url,
             prerelease: response.prerelease,
             published_at: response.published_at.unwrap_or_default(),
+            assets: response
+                .assets
+                .into_iter()
+                .filter(|asset| asset.state == "uploaded")
+                .map(|asset| ReleaseAsset {
+                    name: asset.name,
+                    size: asset.size,
+                    download_url: asset.browser_download_url,
+                    digest: asset.digest,
+                })
+                .collect(),
         })
     }
 }

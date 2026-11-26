@@ -48,6 +48,9 @@ pub(super) fn install<R: Runtime>(builder: tauri::Builder<R>) -> tauri::Builder<
         .plugin(crate::platform::file_transfer::plugin())
         .plugin(crate::platform::speech_synthesis::plugin());
 
+    #[cfg(all(android_local, target_arch = "aarch64"))]
+    let builder = builder.plugin(crate::platform::android_update::plugin());
+
     #[cfg(feature = "devtools-pilot")]
     let builder = builder.plugin(tauri_plugin_pilot::init());
 

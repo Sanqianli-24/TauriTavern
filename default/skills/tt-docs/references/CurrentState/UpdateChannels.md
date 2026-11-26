@@ -1,6 +1,6 @@
 # 更新渠道当前契约
 
-TauriTavern 只维护 `stable` 与 `canary` 两个更新渠道。更新功能只负责检测和引导下载，不在应用内安装更新。
+应用维护 `stable` 与 `canary` 两个更新渠道。NexusTavern 的 ARM64 安卓版支持在应用内下载 Stable 更新，并由 Android 显示安装确认。其他构建沿用 Release 下载链接。
 
 Linux 系统软件源默认使用 `stable`，并提供独立的 `canary` 套件。APT/DNF/Zypper 根据系统的软件包数据库安装更新，与应用内 Stable/Canary 偏好相互独立；软件源地址、签名身份和安装方式见 `docs/CurrentState/LinuxRepository.md`。
 
@@ -24,7 +24,9 @@ Canary Release 必须是 prerelease；Stable latest 不能是 prerelease。返�
 
 ## 安卓本地版发布
 
-安卓构建指定个人发布仓库时，启动器显示「TauriTavern 本地版」，Android application ID 为 `com.tauritavern.client.local`。在平板上覆盖安装一次使用同一签名的新版，之后可使用版本面板的 Stable 渠道接收新发布提示。
+安卓构建指定个人发布仓库时，启动器显示「NexusTavern」，Android application ID 为 `com.tauritavern.client.local`。从只支持外链更新的旧版升级时，需要手动覆盖安装一次同签名的 NexusTavern。之后，用户可以在启动弹窗或版本面板使用「立即更新」。
+
+宿主从已配置的发布仓库识别 `NexusTavern-<version>-android-arm64.apk`，要求附件已上传且包含大小与 SHA-256。只有找到可安装的附件时，`check_for_update` 才返回 `android_install_available: true`。前端调用 `install_android_update` 时只传入检查结果的 `release_token` 和进度 Channel。宿主重新确认该版本，将 APK 流式写入私有缓存并核对大小和摘要。Android 侧再核对包名、版本和签名证书，通过系统安装器完成更新。首次更新可能需要用户在 Android 设置中允许 NexusTavern 安装未知应用，返回后会打开安装确认。
 
 个人公开仓库中的 [Android Local Release](../../.github/workflows/android-local-release.yml) 在推送 `vMAJOR.MINOR.PATCH` 标签时执行。工作流将当前仓库配置为 APK 的更新源，核对源码版本、ARM64 APK 和签名证书后，把 APK 发布为正式 Release 附件。
 

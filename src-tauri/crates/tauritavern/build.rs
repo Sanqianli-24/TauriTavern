@@ -73,6 +73,12 @@ fn emit_ios_factory_profile() {
 fn emit_update_repository() {
     const VARIABLE: &str = "TAURITAVERN_UPDATE_REPOSITORY";
     println!("cargo:rerun-if-env-changed={VARIABLE}");
+    println!("cargo:rustc-check-cfg=cfg(android_local)");
+    if std::env::var_os(VARIABLE).is_some()
+        && std::env::var("CARGO_CFG_TARGET_OS").as_deref() == Ok("android")
+    {
+        println!("cargo:rustc-cfg=android_local");
+    }
     let repository = match std::env::var(VARIABLE) {
         Ok(repository) => repository,
         Err(std::env::VarError::NotPresent) => "Darkatse/TauriTavern".to_owned(),

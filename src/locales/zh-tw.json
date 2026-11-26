@@ -4323,7 +4323,7 @@
     "Render chat code blocks containing &lt;html&gt;, &lt;!DOCTYPE&gt;, or &lt;script&gt; as interactive UI.": "將包含 <html>、<!DOCTYPE> 或 <script> 的聊天程式碼區塊渲染為可互動介面。",
     "sd_minimal_prompt_processing": "減少對 LLM 生成提示詞的後處理，以保留 JSON 和其他結構化輸出。",
     "sd_minimal_prompt_processing_txt": "最少化回應提示詞處理",
-    "ttv_version.panel_title": "TauriTavern 版本",
+    "ttv_version.panel_title": "${0} 版本",
     "ttv_version.app_version_label": "應用版本",
     "ttv_version.compat_label": "相容基線",
     "ttv_version.git_label": "Git 資訊",

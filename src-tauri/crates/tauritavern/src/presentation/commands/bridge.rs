@@ -50,6 +50,8 @@ pub struct VersionInfo {
     pub pkg_version: String,
     #[serde(rename = "tauriVersion")]
     pub tauri_version: String,
+    #[serde(rename = "appName")]
+    pub app_name: String,
     #[serde(rename = "gitRevision")]
     pub git_revision: Option<String>,
     #[serde(rename = "gitBranch")]
@@ -69,6 +71,7 @@ pub fn get_client_version() -> Result<VersionInfo, CommandError> {
         // Keep it aligned with the embedded frontend baseline to preserve plugin behavior.
         pkg_version: SILLYTAVERN_COMPAT_VERSION.to_string(),
         tauri_version: crate::product::VERSION.to_string(),
+        app_name: crate::product::DISPLAY_NAME.to_string(),
         git_revision: crate::product::optional_build_value(crate::product::GIT_REVISION)
             .map(str::to_string),
         git_branch: crate::product::optional_build_value(crate::product::GIT_BRANCH)

@@ -1,9 +1,10 @@
 import { DOMPurify } from '../../../lib.js';
-import { CLIENT_VERSION, converter, displayVersion, eventSource, event_types, reloadMarkdownProcessor } from '../../../script.js';
+import { appDisplayName, CLIENT_VERSION, converter, displayVersion, eventSource, event_types, reloadMarkdownProcessor } from '../../../script.js';
 import {
     checkForUpdate,
     getClientVersion as getBridgeClientVersion,
     getTauriTavernSettings,
+    installAndroidUpdate,
     openExternalUrl,
     updateTauriTavernSettings,
 } from '../../../tauri-bridge.js';
@@ -29,6 +30,7 @@ const UNKNOWN_VALUE = 'UNKNOWN';
 let latestUpdateResult = null;
 let startupUpdateCheckPromise = null;
 let startupUpdatePopupShown = false;
+let androidUpdateInProgress = false;
 let tauriTavernSettingsCache = null;
 let tauriTavernSettingsPromise = null;
 let versionInfoCache = null;
@@ -71,9 +73,7 @@ function extractCompatVersion(agent) {
 }
 
 function getFallbackVersion() {
-    const normalized = String(displayVersion || '')
-        .replace(/^TauriTavern\s*/i, '')
-        .trim();
+    const normalized = displayVersion.slice(appDisplayName.length).trim();
 
     return normalized || UNKNOWN_VALUE;
 }
@@ -100,6 +100,7 @@ function buildVersionInfo(payload = null) {
     const defaultUpdateChannel = payload?.defaultUpdateChannel === 'canary' ? 'canary' : 'stable';
 
     return {
+        appName: payload?.appName || appDisplayName,
         packageVersion,
         compatBaseline,
         gitInfo,
@@ -133,6 +134,7 @@ async function resolveVersionInfo() {
 }
 
 function renderVersionInfo(info) {
+    $('#tauritavern_version_title').text(localizeTemplate('ttv_version.panel_title', '${0} Version', info.appName));
     $('#tauritavern_version_number').text(info.packageVersion);
     $('#tauritavern_compat_version').text(info.compatBaseline);
     $('#tauritavern_git_info').text(info.gitInfo);
@@ -225,6 +227,62 @@ function renderChangelogHtml(markdown) {
     return DOMPurify.sanitize(html);
 }
 
+async function runAndroidUpdate(result) {
+    if (androidUpdateInProgress) {
+        return false;
+    }
+
+    const root = document.createElement('div');
+    root.className = 'ttv-update-popup';
+    const status = document.createElement('p');
+    status.className = 'ttv-update-popup-meta';
+    status.setAttribute('role', 'status');
+    root.append(status);
+    const progress = document.createElement('progress');
+    progress.max = 100;
+    progress.setAttribute('aria-label', localize('ttv_version.update_now', 'Update now'));
+    root.append(progress);
+
+    const reportProgress = (percentage) => {
+        progress.value = percentage;
+        status.textContent = percentage === 100
+            ? localize('ttv_version.install_prompt', 'Follow the Android prompts to install the update.')
+            : localizeTemplate('ttv_version.downloading_update', 'Downloading update… ${0}%', percentage);
+    };
+
+    const popup = new Popup(root, POPUP_TYPE.TEXT, '', {
+        okButton: false,
+        onClosing: () => !androidUpdateInProgress,
+    });
+    reportProgress(0);
+    androidUpdateInProgress = true;
+    let outcome;
+    let errorMessage;
+    void popup.show();
+    try {
+        outcome = await installAndroidUpdate(result.release_token, reportProgress);
+    } catch (error) {
+        errorMessage = localizeTemplate(
+            'ttv_version.install_failed',
+            'Could not update the app. Try again from the version panel. ${0}',
+            toUserFacingErrorText(error) || extractErrorText(error),
+        );
+    } finally {
+        androidUpdateInProgress = false;
+        await popup.complete(POPUP_RESULT.AFFIRMATIVE);
+    }
+
+    if (outcome === 'permission_required') {
+        globalThis.toastr?.warning?.(localize(
+            'ttv_version.install_permission_required',
+            'Allow this app to install updates in Android settings, then try again.',
+        ));
+    } else if (errorMessage) {
+        globalThis.toastr?.error?.(errorMessage);
+    }
+    return outcome === 'installer_opened';
+}
+
 function showUpdateResult(result) {
     const release = result?.latest_release;
     if (!release) {
@@ -240,7 +298,8 @@ function showUpdateResult(result) {
 
     $('#tauritavern_update_version').text(getReleaseLabel(result));
     $('#tauritavern_update_changelog').html(renderChangelogHtml(release.body));
-    $('#tauritavern_update_download').attr('href', release.html_url);
+    $('#tauritavern_update_download').attr('href', release.html_url).toggle(!result.android_install_available);
+    $('#tauritavern_update_install').toggle(Boolean(result.android_install_available));
 
     if ($result.is(':hidden')) {
         $result.slideDown(200);
@@ -388,7 +447,8 @@ function buildStartupUpdatePopupContent(result) {
     title.className = 'ttv-update-popup-title';
     title.textContent = localizeTemplate(
         'ttv_version.popup_title',
-        'TauriTavern update available: ${0}',
+        '${0} update available: ${1}',
+        versionInfoCache?.appName || appDisplayName,
         releaseLabel,
     );
     header.appendChild(title);
@@ -397,7 +457,7 @@ function buildStartupUpdatePopupContent(result) {
     meta.className = 'ttv-update-popup-meta';
     meta.textContent = result.channel === 'canary'
         ? localize('ttv_version.canary_channel', 'Canary channel')
-        : `TauriTavern ${result.current_version}  \u2192  ${release.version}`;
+        : `${result.current_version}  \u2192  ${release.version}`;
     header.appendChild(meta);
 
     const note = document.createElement('p');
@@ -420,7 +480,9 @@ function buildStartupUpdatePopupContent(result) {
 
 async function showStartupUpdatePopup(result) {
     const popup = new Popup(buildStartupUpdatePopupContent(result), POPUP_TYPE.CONFIRM, '', {
-        okButton: localize('ttv_version.popup_download', 'Download'),
+        okButton: result.android_install_available
+            ? localize('ttv_version.update_now', 'Update now')
+            : localize('ttv_version.popup_download', 'Download'),
         cancelButton: localize('ttv_version.popup_later', 'Later'),
         allowVerticalScrolling: true,
         wide: true,
@@ -428,6 +490,13 @@ async function showStartupUpdatePopup(result) {
     });
 
     const popupResult = await popup.show();
+    if (popupResult === POPUP_RESULT.AFFIRMATIVE && result.android_install_available) {
+        if (await runAndroidUpdate(result)) {
+            await rememberStartupUpdate(result);
+        }
+        return;
+    }
+
     await rememberStartupUpdate(result);
 
     if (popupResult === POPUP_RESULT.AFFIRMATIVE) {
@@ -632,6 +701,11 @@ jQuery(async () => {
         $('#tauritavern_check_update').on('click', onCheckUpdateClick);
     }
     $('#tauritavern_update_dismiss').on('click', hideUpdateResult);
+    $('#tauritavern_update_install').on('click', () => {
+        if (latestUpdateResult?.android_install_available) {
+            void runAndroidUpdate(latestUpdateResult);
+        }
+    });
     container.on('click', 'a[target="_blank"]', onExternalLinkClick);
 
     const [versionInfo, settings] = await Promise.all([

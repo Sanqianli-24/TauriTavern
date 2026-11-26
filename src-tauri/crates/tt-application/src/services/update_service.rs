@@ -213,6 +213,7 @@ mod tests {
             html_url: String::new(),
             prerelease: false,
             published_at: String::new(),
+            assets: Vec::new(),
         }
     }
 
@@ -226,6 +227,7 @@ mod tests {
             html_url: String::new(),
             prerelease: true,
             published_at: String::new(),
+            assets: Vec::new(),
         }
     }
 }

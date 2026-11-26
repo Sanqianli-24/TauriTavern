@@ -658,7 +658,8 @@ export function enqueueChatSave(task) {
 let firstRun = false;
 export let settingsReady = false;
 let currentVersion = '0.0.0';
-export let displayVersion = 'TauriTavern';
+export let appDisplayName = 'TauriTavern';
+export let displayVersion = appDisplayName;
 
 let generation_started = new Date();
 /** @type {Character[]} */
@@ -900,7 +901,8 @@ async function getClientVersion() {
         const data = await getBridgeClientVersion();
         CLIENT_VERSION = data.agent || `SillyTavern:${SILLYTAVERN_COMPAT_VERSION}:TauriTavern`;
         const tauriVersion = data.tauriVersion || data.pkgVersion;
-        displayVersion = `TauriTavern ${tauriVersion || 'UNKNOWN'}`;
+        appDisplayName = data.appName || appDisplayName;
+        displayVersion = `${appDisplayName} ${tauriVersion || 'UNKNOWN'}`;
         currentVersion = tauriVersion || '0.0.0';
 
         if (data.gitRevision && data.gitBranch) {
@@ -909,6 +911,8 @@ async function getClientVersion() {
 
         $('#version_display').text(displayVersion);
         $('#version_display_welcome').text(displayVersion);
+        $('.tt-workspace-brand').text(appDisplayName);
+        document.title = appDisplayName;
     } catch (err) {
         console.error('Couldn\'t get client version', err);
     }
