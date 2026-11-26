@@ -30,8 +30,10 @@ jobs:
           cache: true
           install: false
 
-      - name: Validate release version
-        run: node scripts/ci/verify-release-version.mjs "$GITHUB_REF_NAME"
+      - name: Validate release version and icon
+        run: |
+          node scripts/ci/verify-release-version.mjs "$GITHUB_REF_NAME"
+          python3 scripts/generate-nexustavern-icons.py --check
 
       - name: Install Android host dependencies
         run: |

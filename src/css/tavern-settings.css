@@ -272,8 +272,15 @@
     display: none;
 }
 
-#tt-settings-about > * + * {
+#tt-settings-about > :not([hidden]) ~ :not([hidden]) {
     margin-top: 12px;
+}
+
+.tt-settings-brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 1.18em;
 }
 
 .tt-data-transfer {

@@ -99,6 +99,8 @@ Flatpak 构建配方位于 `packaging/flatpak/`，软件源发布工具位于
   包装 `tauri ios xcode-script`，补齐 Xcode GUI 构建环境中的 PATH / Node / pnpm，并在构建后处理 iOS 图标。
 - `generate-ios-app-icon-variants.swift`
   从 `src-tauri/crates/tauritavern/icons/icon.png` 生成 iOS `Any` / `Dark` / `Tinted` 三个 1024px App Icon 源图。
+- `generate-nexustavern-icons.py`
+  从 `src/img/nexustavern-mark.svg` 导出个人安卓版的前景和背景色。用 `python scripts/generate-nexustavern-icons.py` 更新资源，用 `--check` 核对导出结果。
 - `ios-policy.mjs`
   iOS Dev/Build 包装脚本：为构建过程注入 `TAURITAVERN_IOS_POLICY_PROFILE`，并在 `ios_internal_full` / `ios_external_beta` 构建时自动使用 `--export-method app-store-connect`。
 - `ios-opaque-app-icons.swift`

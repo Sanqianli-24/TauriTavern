@@ -79,7 +79,10 @@
             <button type="button" id="tt-sessions-toggle" class="tt-workspace-button" data-i18n="[aria-label]Sessions" aria-label="Sessions">
                 <i class="fa-solid fa-bars-staggered" aria-hidden="true"></i>
             </button>
-            <div class="tt-workspace-brand">TauriTavern</div>
+            <div class="tt-app-identity">
+                <img class="tt-product-mark" src="img/nexustavern-mark.svg" alt="" width="24" height="24" data-tt-nexustavern-brand hidden>
+                <span class="tt-workspace-brand" data-tt-app-name>TauriTavern</span>
+            </div>
             <div id="tt-active-session" class="tt-active-session" hidden></div>
             <button type="button" class="tt-workspace-button tt-compact-characters" data-tt-workspace-action="characters" aria-label="Characters" data-i18n="[aria-label]Characters">
                 <i class="fa-solid fa-address-card" aria-hidden="true"></i>
@@ -149,6 +152,10 @@
                                 <p id="tt-settings-transfer-unavailable" data-i18n="Data migration is unavailable">Data migration is unavailable</p>
                             </div>
                             <div id="tt-settings-about" hidden>
+                                <div class="tt-settings-brand" data-tt-nexustavern-brand hidden>
+                                    <img class="tt-product-mark" src="img/nexustavern-mark.svg" alt="" width="40" height="40">
+                                    <strong data-tt-app-name></strong>
+                                </div>
                                 <div id="UI-language-block" class="tt-settings-language">
                                     <label for="ui_language_select" data-i18n="Language">Language</label>
                                     <select id="ui_language_select" class="text_pole">

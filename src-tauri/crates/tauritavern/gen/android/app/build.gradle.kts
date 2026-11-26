@@ -40,8 +40,12 @@ android {
     }
     if (localAppName != null) {
         sourceSets {
-            getByName("debug").manifest.srcFile("src/local/AndroidManifest.xml")
-            getByName("release").manifest.srcFile("src/local/AndroidManifest.xml")
+            listOf("debug", "release").forEach { variant ->
+                getByName(variant) {
+                    manifest.srcFile("src/local/AndroidManifest.xml")
+                    res.srcDir("src/local/res")
+                }
+            }
         }
     }
     signingConfigs {

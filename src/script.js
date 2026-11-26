@@ -911,7 +911,8 @@ async function getClientVersion() {
 
         $('#version_display').text(displayVersion);
         $('#version_display_welcome').text(displayVersion);
-        $('.tt-workspace-brand').text(appDisplayName);
+        $('[data-tt-app-name]').text(appDisplayName);
+        $('[data-tt-nexustavern-brand]').prop('hidden', appDisplayName !== 'NexusTavern');
         document.title = appDisplayName;
     } catch (err) {
         console.error('Couldn\'t get client version', err);

@@ -43,14 +43,34 @@ body {
     padding-inline: var(--tt-gutter);
 }
 
-.tt-workspace-brand, .tt-welcome-copy h1 {
+.tt-workspace-brand, .tt-settings-brand > strong, .tt-welcome-copy h1 {
     font-family: Georgia, 'Noto Serif CJK SC', 'Songti SC', SimSun, serif;
     font-weight: 600;
 }
 
+.tt-app-identity {
+    display: flex;
+    flex: none;
+    align-items: center;
+    gap: 7px;
+    min-width: 0;
+    max-width: 50%;
+    margin-inline-end: auto;
+}
+
 .tt-workspace-brand {
     font-size: clamp(16px, 3.8vw, 22px);
-    margin-inline-end: auto;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.tt-product-mark {
+    flex: none;
+}
+
+#tt-settings-toggle {
+    flex: none;
     white-space: nowrap;
 }
 
