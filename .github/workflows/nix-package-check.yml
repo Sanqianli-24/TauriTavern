@@ -16,6 +16,7 @@ concurrency:
 jobs:
   check:
     name: evaluate-and-fetch-dependencies
+    if: github.repository == 'Darkatse/TauriTavern'
     runs-on: ubuntu-22.04
     timeout-minutes: 20
 
@@ -48,6 +49,7 @@ jobs:
 
   refresh-flatpak:
     name: refresh-flatpak-sources
+    if: github.repository == 'Darkatse/TauriTavern'
     runs-on: ubuntu-22.04
     timeout-minutes: 20
     permissions:

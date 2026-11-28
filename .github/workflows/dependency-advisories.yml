@@ -17,6 +17,7 @@ concurrency:
 jobs:
   audit:
     name: audit-dev
+    if: github.repository == 'Darkatse/TauriTavern'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
